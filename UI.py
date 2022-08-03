@@ -1,8 +1,19 @@
+import openpyxl
+import requests
 from PyQt6 import QtGui
+from PyQt6.QtGui import QTextCursor
 from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QTextEdit, QFileDialog
 import sys
 
 # 窗口size
+from bs4 import BeautifulSoup
+from openpyxl import Workbook
+from openpyxl.utils.exceptions import InvalidFileException
+from openpyxl.worksheet.worksheet import Worksheet
+from requests.exceptions import MissingSchema
+import threading
+
+
 window_width: int = 500
 window_height: int = 314
 
@@ -19,6 +30,7 @@ import_button: QPushButton
 text_box: QTextEdit
 test_button: QPushButton
 file: str
+task: dict = {}
 
 
 # 渲染UI
@@ -59,8 +71,8 @@ def render_ui():
 
 
 def handle_crawl_button_click():
-    run_log("run")
-    pass
+    crawl_thread = CrawlThread()
+    crawl_thread.start()
 
 
 def handle_import_button_click():
@@ -69,6 +81,13 @@ def handle_import_button_click():
     if len(res) != 0:
         file = res[0]
         run_log(f"[FILE_IMPORT] Path:{file}")
+        try:
+            global task
+            task = read_xlsx()
+        except InvalidFileException:
+            err_log(f"[ERROR] File '{file}' may not a xlsx file")
+        else:
+            run_log(f"[FILE_IMPORT] Xlsx file import success")
     else:
         run_log(f"[FILE_IMPORT] Cancel")
 
@@ -85,3 +104,63 @@ def run_log(text: str):
 def err_log(text: str):
     text_box.setTextColor(QtGui.QColor('#FF0000'))
     text_box.append(text)
+
+
+def request_get(url: str):
+    try:
+        response = requests.get(url, allow_redirects=False)
+    except MissingSchema:
+        err_log(f"[ERROR] Invalid URL '{url}', perhaps you meant 'https://{url}'")
+        return None
+    else:
+        if response.status_code == 200 or response.status_code == 301:
+            run_log(f"[GET] {response.status_code}: {url}")
+            return response.content
+        else:
+            err_log(f"[GET] {response.status_code}: {url}")
+            return None
+
+
+def get_url_type(url: str):
+    if url.startswith("https://vm.tiktok.com"):
+        return "solution_1"
+    else:
+        err_log(f"[ERROR] Invalid URL '{url}'")
+        return ""
+
+
+def solution_1(url: str):
+    response = request_get(url=url)
+    if response is None:
+        return
+    soup = BeautifulSoup(response, "lxml")
+    redirect_url = soup.find(name="a")["href"]
+    print(redirect_url)
+
+
+def read_xlsx() -> dict:
+    wb: Workbook = openpyxl.open(filename=file)
+    ws: Worksheet = wb.worksheets[0]
+    task_list = []
+    row: int = 2
+    while ws.cell(row, 1).value is not None:
+        task_list.append(ws.cell(row, 1).value)
+        row = row + 1
+    return {
+        'task_count': row,
+        'task_list': task_list
+    }
+
+
+class CrawlThread (threading.Thread):
+    def run(self):
+        global task
+        if task == {}:
+            err_log("[ERROR] None file imported")
+        else:
+            run_log("[BEGIN] Crawl start")
+            for url in task.get("task_list"):
+                url_type = get_url_type(url=url)
+                if url_type == "solution_1":
+                    solution_1(url)
+

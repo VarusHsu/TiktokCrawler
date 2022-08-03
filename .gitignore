@@ -1,6 +1,7 @@
-./.idea/
+.idea
 __pycache__/
 setup.py
 .idea/.gitignore
 build
 dist
+.DS_Store
