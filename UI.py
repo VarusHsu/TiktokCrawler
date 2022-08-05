@@ -1,7 +1,7 @@
 import openpyxl
 import requests
 from PyQt6 import QtGui
-from PyQt6.QtGui import QTextCursor
+from PyQt6.QtGui import QTextCursor, QFont
 from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QTextEdit, QFileDialog
 import sys
 
@@ -32,7 +32,9 @@ test_button: QPushButton
 file: str
 task: dict = {}
 
+font: QFont = QFont("Consolas")
 
+# "Montserrat,Roboto,Helvetica,Arial,sans-serif"
 # 渲染UI
 def render_ui():
     # 获取窗口
@@ -47,7 +49,9 @@ def render_ui():
 
     # 文本框
     global text_box
+    global font
     text_box = QTextEdit(window)
+    text_box.setFontFamily("Consolas")
     text_box.move(edge_distance, edge_distance)
     text_box.resize(window_width - 2 * edge_distance, window_height - button_height - 3 * edge_distance)
     text_box.setReadOnly(True)
@@ -92,23 +96,26 @@ def handle_import_button_click():
         run_log(f"[FILE_IMPORT] Cancel")
 
 
-def handle_test_button_click():
-    err_log("err")
-
-
 def run_log(text: str):
     text_box.setTextColor(QtGui.QColor('#000000'))
     text_box.append(text)
+    cursor = text_box.textCursor()
+    cursor.movePosition(QTextCursor.MoveOperation.EndOfLine)
+    text_box.setTextCursor(cursor)
 
 
 def err_log(text: str):
     text_box.setTextColor(QtGui.QColor('#FF0000'))
     text_box.append(text)
+    cursor = text_box.textCursor()
+    cursor.movePosition(QTextCursor.MoveOperation.Down.EndOfLine)
+    text_box.setTextCursor(cursor)
 
 
-def request_get(url: str):
+
+def request_get(url: str, allow_redirects: bool):
     try:
-        response = requests.get(url, allow_redirects=False)
+        response = requests.get(url, allow_redirects=allow_redirects)
     except MissingSchema:
         err_log(f"[ERROR] Invalid URL '{url}', perhaps you meant 'https://{url}'")
         return None
@@ -130,12 +137,13 @@ def get_url_type(url: str):
 
 
 def solution_1(url: str):
-    response = request_get(url=url)
+    response = request_get(url=url,allow_redirects=False)
     if response is None:
         return
     soup = BeautifulSoup(response, "lxml")
     redirect_url = soup.find(name="a")["href"]
-    print(redirect_url)
+    response = request_get(redirect_url, allow_redirects=True)
+    print(response)
 
 
 def read_xlsx() -> dict:
