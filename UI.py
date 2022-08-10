@@ -1,18 +1,17 @@
 import openpyxl
 import requests
-from PyQt6 import QtGui
-from PyQt6.QtGui import QTextCursor, QFont
-from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QTextEdit, QFileDialog
+from PyQt6 import QtCore
+from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QFileDialog, QListView
 import sys
 
 # 窗口size
+from PyQt6.QtCore import QThread, QStringListModel
 from bs4 import BeautifulSoup
 from openpyxl import Workbook
 from openpyxl.utils.exceptions import InvalidFileException
 from openpyxl.worksheet.worksheet import Worksheet
-from requests.exceptions import MissingSchema
-import threading
-
+from requests.exceptions import MissingSchema, SSLError
 
 window_width: int = 500
 window_height: int = 314
@@ -27,14 +26,23 @@ edge_distance: int = 20
 window: QWidget
 crawl_button: QPushButton
 import_button: QPushButton
-text_box: QTextEdit
+text_box: QListView
 test_button: QPushButton
 file: str
 task: dict = {}
+string_list_model = QStringListModel()
+logList = ['[Welcome] QAQ']
+string_list_model.setStringList(logList)
+
 
 font: QFont = QFont("Consolas")
 
-# "Montserrat,Roboto,Helvetica,Arial,sans-serif"
+colors = {
+    "RED": "#ff0000",
+    "BLACK": "#000000"
+}
+
+
 # 渲染UI
 def render_ui():
     # 获取窗口
@@ -50,11 +58,11 @@ def render_ui():
     # 文本框
     global text_box
     global font
-    text_box = QTextEdit(window)
-    text_box.setFontFamily("Consolas")
+    text_box = QListView(window)
     text_box.move(edge_distance, edge_distance)
     text_box.resize(window_width - 2 * edge_distance, window_height - button_height - 3 * edge_distance)
-    text_box.setReadOnly(True)
+    text_box.setModel(string_list_model)
+    text_box.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
     # 爬取按钮
     global crawl_button
@@ -75,7 +83,7 @@ def render_ui():
 
 
 def handle_crawl_button_click():
-    crawl_thread = CrawlThread()
+    crawl_thread = CrawlThread(window)
     crawl_thread.start()
 
 
@@ -84,47 +92,41 @@ def handle_import_button_click():
     res = QFileDialog.getOpenFileNames()[0]
     if len(res) != 0:
         file = res[0]
-        run_log(f"[FILE_IMPORT] Path:{file}")
+        log(f"[FILE_IMPORT] Path:{file}")
         try:
             global task
             task = read_xlsx()
         except InvalidFileException:
-            err_log(f"[ERROR] File '{file}' may not a xlsx file")
+            log(f"[ERROR] File '{file}' may not a xlsx file")
         else:
-            run_log(f"[FILE_IMPORT] Xlsx file import success")
+            log(f"[FILE_IMPORT] Xlsx file import success")
     else:
-        run_log(f"[FILE_IMPORT] Cancel")
+        log(f"[FILE_IMPORT] Cancel")
 
 
-def run_log(text: str):
-    text_box.setTextColor(QtGui.QColor('#000000'))
-    text_box.append(text)
-    cursor = text_box.textCursor()
-    cursor.movePosition(QTextCursor.MoveOperation.EndOfLine)
-    text_box.setTextCursor(cursor)
-
-
-def err_log(text: str):
-    text_box.setTextColor(QtGui.QColor('#FF0000'))
-    text_box.append(text)
-    cursor = text_box.textCursor()
-    cursor.movePosition(QTextCursor.MoveOperation.Down.EndOfLine)
-    text_box.setTextCursor(cursor)
-
+def log(text: str, color: str = colors["BLACK"]):
+    # todo  这里继续加字体颜色
+    logList.append(text)
+    string_list_model.setStringList(logList)
+    text_box.setModel(string_list_model)
+    text_box.verticalScrollBar().setValue(text_box.verticalScrollBar().maximum())
 
 
 def request_get(url: str, allow_redirects: bool):
     try:
         response = requests.get(url, allow_redirects=allow_redirects)
     except MissingSchema:
-        err_log(f"[ERROR] Invalid URL '{url}', perhaps you meant 'https://{url}'")
+        log(f"[ERROR] Invalid URL '{url}', perhaps you meant 'https://{url}'")
         return None
+    except SSLError:
+        log(f"[ERROR] Max retries exceeded with URL '{url}'")
+        pass
     else:
         if response.status_code == 200 or response.status_code == 301:
-            run_log(f"[GET] {response.status_code}: {url}")
+            log(f"[GET] {response.status_code}: {url}")
             return response.content
         else:
-            err_log(f"[GET] {response.status_code}: {url}")
+            log(f"[GET] {response.status_code}: {url}")
             return None
 
 
@@ -132,12 +134,12 @@ def get_url_type(url: str):
     if url.startswith("https://vm.tiktok.com"):
         return "solution_1"
     else:
-        err_log(f"[ERROR] Invalid URL '{url}'")
+        log(f"[ERROR] Invalid URL '{url}'")
         return ""
 
 
 def solution_1(url: str):
-    response = request_get(url=url,allow_redirects=False)
+    response = request_get(url=url, allow_redirects=False)
     if response is None:
         return
     soup = BeautifulSoup(response, "lxml")
@@ -160,13 +162,13 @@ def read_xlsx() -> dict:
     }
 
 
-class CrawlThread (threading.Thread):
+class CrawlThread (QThread):
     def run(self):
         global task
         if task == {}:
-            err_log("[ERROR] None file imported")
+            log("[ERROR] None file imported")
         else:
-            run_log("[BEGIN] Crawl start")
+            log("[BEGIN] Crawl start")
             for url in task.get("task_list"):
                 url_type = get_url_type(url=url)
                 if url_type == "solution_1":
