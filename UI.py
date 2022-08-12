@@ -113,8 +113,11 @@ def log(text: str, color: str = colors["BLACK"]):
 
 
 def request_get(url: str, allow_redirects: bool):
+    headers = {
+        "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36"
+    }
     try:
-        response = requests.get(url, allow_redirects=allow_redirects)
+        response = requests.get(url, allow_redirects=allow_redirects, headers=headers)
     except MissingSchema:
         log(f"[ERROR] Invalid URL '{url}', perhaps you meant 'https://{url}'")
         return None
@@ -145,7 +148,7 @@ def solution_1(url: str):
     soup = BeautifulSoup(response, "lxml")
     redirect_url = soup.find(name="a")["href"]
     response = request_get(redirect_url, allow_redirects=True)
-    print(response)
+    print(redirect_url)
 
 
 def read_xlsx() -> dict:
