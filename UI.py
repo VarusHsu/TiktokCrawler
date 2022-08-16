@@ -1,3 +1,5 @@
+import json
+
 import openpyxl
 import requests
 from PyQt6 import QtCore
@@ -12,6 +14,8 @@ from openpyxl import Workbook
 from openpyxl.utils.exceptions import InvalidFileException
 from openpyxl.worksheet.worksheet import Worksheet
 from requests.exceptions import MissingSchema, SSLError
+
+ms_token = "g8vXKy2fjhjd7xrrPcCU7Wfop7isL5KAuyjofBp061Mtaxm_fA5vZ_lAlj46mvE_NnR7x-m-022QnOLdb6Em6HbYv1qm-ek2LXKHh6aTtnLpk_Ke8h7MUTkvWAUZX0cQ1JhrowY="
 
 window_width: int = 500
 window_height: int = 314
@@ -147,8 +151,30 @@ def solution_1(url: str):
         return
     soup = BeautifulSoup(response, "lxml")
     redirect_url = soup.find(name="a")["href"]
-    response = request_get(redirect_url, allow_redirects=True)
-    print(redirect_url)
+    video_id = get_tiktok_video_id(redirect_url)
+    print(video_id)
+    url = "https://www.tiktok.com/api/recommend/item_list/?aid=1988&app_language=es&app_name=tiktok_web&battery_info=0.44&browser_language=zh-CN&browser_name=Mozilla&browser_online=true&browser_platform=MacIntel&browser_version=5.0%20%28Macintosh%3B%20Intel%20Mac%20OS%20X%2010_15_7%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F104.0.0.0%20Safari%2F537.36&channel=tiktok_web&cookie_enabled=true&count=30&device_id=7106463322559923714&device_platform=web_pc&focus_state=true&from_page=video&history_len=1&insertedItemID="+video_id+"&is_fullscreen=true&is_page_visible=true&os=mac&priority_region=&referer=&region=DE&screen_height=1920&screen_width=1080&tz_name=Asia%2FShanghai&webcast_language=es&msToken=" + ms_token
+    response = request_get(url=url, allow_redirects=False)
+    if response is None:
+        return
+    rsp_json = json.loads(response)
+    res = get_tiktok_data_from_api(except_id=video_id, rsp_json=rsp_json)
+    if res["found"] == 1:
+        log(f"[SUCCESS] Get video:{video_id}; share: {res['share']}; play: {res['play']}; like: {res['digg']}; comment: {res['comment']}")
+    elif res["found"] == 0:
+        log("[FAILED] This video may lose efficacy")
+    else:
+        log("[FAILED] Api response may issue")
+
+
+def get_tiktok_video_id(url: str)-> str:
+    res_begin_index: int = url.rfind("/")
+    res_end_index: int = url.find("?")
+    res = url[res_begin_index + 1:res_end_index]
+    for letter in res:
+        if letter.isalpha():
+            return ""
+    return res
 
 
 def read_xlsx() -> dict:
@@ -177,3 +203,35 @@ class CrawlThread (QThread):
                 if url_type == "solution_1":
                     solution_1(url)
 
+
+def get_tiktok_data_from_api(except_id: str, rsp_json: dict)-> dict:
+    try:
+        itemList = rsp_json["itemList"]
+        for item in itemList:
+            if item["id"] == except_id:
+                share = item["stats"]["shareCount"]
+                play = item["stats"]["playCount"]
+                digg = item["stats"]["diggCount"]
+                comment = item["stats"]["commentCount"]
+                return {
+                    "found": 1,
+                    "share": share,
+                    "play": play,
+                    "digg": digg,
+                    "comment": comment
+                }
+        return {
+            "found": 0,
+            "share": 0,
+            "play": 0,
+            "digg": 0,
+            "comment": 0,
+        }
+    except KeyError:
+        return {
+            "found": -1,
+            "share": 0,
+            "play": 0,
+            "digg": 0,
+            "comment": 0,
+        }
