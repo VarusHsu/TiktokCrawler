@@ -39,7 +39,6 @@ string_list_model = QStringListModel()
 logList = ['[Welcome] QAQ']
 string_list_model.setStringList(logList)
 
-
 font: QFont = QFont("Consolas")
 
 colors = {
@@ -139,28 +138,31 @@ def request_get(url: str, allow_redirects: bool):
         if response.status_code == 200 or response.status_code == 301:
             log(f"[GET] {response.status_code}: {url}")
             return response.content
+        elif response.status_code == 404:
+            return 404
         else:
             log(f"[GET] {response.status_code}: {url}")
             return None
 
 
 def get_url_type(url: str):
-    if url.startswith("https://vm.tiktok.com"):
+    if url.startswith("https://vm.tiktok.com") or url.startswith("https://vt.tiktok.com"):
         return "solution_1"
-    else:
-        log(f"[ERROR] Invalid URL '{url}'")
-        return ""
+    elif url.startswith("https://www.tiktok.com"):
+        return "solution_2"
+    log(f"[ERROR] Invalid URL '{url}'")
+    return ""
 
 
 def solution_1(url: str):
+    print(1)
     response = request_get(url=url, allow_redirects=False)
     if response is None:
         return
     soup = BeautifulSoup(response, "lxml")
     redirect_url = soup.find(name="a")["href"]
     video_id = get_tiktok_video_id(redirect_url)
-    print(video_id)
-    url = "https://www.tiktok.com/api/recommend/item_list/?aid=1988&app_language=es&app_name=tiktok_web&battery_info=0.44&browser_language=zh-CN&browser_name=Mozilla&browser_online=true&browser_platform=MacIntel&browser_version=5.0%20%28Macintosh%3B%20Intel%20Mac%20OS%20X%2010_15_7%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F104.0.0.0%20Safari%2F537.36&channel=tiktok_web&cookie_enabled=true&count=30&device_id=7106463322559923714&device_platform=web_pc&focus_state=true&from_page=video&history_len=1&insertedItemID="+video_id+"&is_fullscreen=true&is_page_visible=true&os=mac&priority_region=&referer=&region=DE&screen_height=1920&screen_width=1080&tz_name=Asia%2FShanghai&webcast_language=es&msToken=" + ms_token
+    url = "https://www.tiktok.com/api/recommend/item_list/?aid=1988&app_language=es&app_name=tiktok_web&battery_info=0.44&browser_language=zh-CN&browser_name=Mozilla&browser_online=true&browser_platform=MacIntel&browser_version=5.0%20%28Macintosh%3B%20Intel%20Mac%20OS%20X%2010_15_7%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F104.0.0.0%20Safari%2F537.36&channel=tiktok_web&cookie_enabled=true&count=30&device_id=7106463322559923714&device_platform=web_pc&focus_state=true&from_page=video&history_len=1&insertedItemID=" + video_id + "&is_fullscreen=true&is_page_visible=true&os=mac&priority_region=&referer=&region=DE&screen_height=1920&screen_width=1080&tz_name=Asia%2FShanghai&webcast_language=es&msToken=" + ms_token
     response = request_get(url=url, allow_redirects=False)
     if response is None:
         return
@@ -172,9 +174,30 @@ def solution_1(url: str):
         log("[FAILED] This video may lose efficacy")
     else:
         log("[FAILED] Api response may issue")
+    return res
 
 
-def get_tiktok_video_id(url: str)-> str:
+def solution_2(url: str):
+    print(2)
+    video_id = get_tiktok_video_id(url)
+    url_ = "https://www.tiktok.com/api/recommend/item_list/?aid=1988&app_language=es&app_name=tiktok_web&battery_info=0.44&browser_language=zh-CN&browser_name=Mozilla&browser_online=true&browser_platform=MacIntel&browser_version=5.0%20%28Macintosh%3B%20Intel%20Mac%20OS%20X%2010_15_7%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F104.0.0.0%20Safari%2F537.36&channel=tiktok_web&cookie_enabled=true&count=30&device_id=7106463322559923714&device_platform=web_pc&focus_state=true&from_page=video&history_len=1&insertedItemID=" + video_id + "&is_fullscreen=true&is_page_visible=true&os=mac&priority_region=&referer=&region=DE&screen_height=1920&screen_width=1080&tz_name=Asia%2FShanghai&webcast_language=es&msToken=" + ms_token
+    response = request_get(url=url_, allow_redirects=False)
+    print(url_)
+    print(response)
+    if response is None:
+        return
+    rsp_json = json.loads(response)
+    res = get_tiktok_data_from_api(except_id=video_id, rsp_json=rsp_json)
+    if res["found"] == 1:
+        log(f"[SUCCESS] Get video:{video_id}; share: {res['share']}; play: {res['play']}; like: {res['digg']}; comment: {res['comment']}")
+    elif res["found"] == 0:
+        log("[FAILED] This video may lose efficacy")
+    else:
+        log("[FAILED] Api response may issue")
+    return res
+
+
+def get_tiktok_video_id(url: str) -> str:
     res_begin_index: int = url.rfind("/")
     res_end_index: int = url.find("?")
     res = url[res_begin_index + 1:res_end_index]
@@ -198,25 +221,49 @@ def read_xlsx() -> dict:
     }
 
 
-class CrawlThread (QThread):
+class CrawlThread(QThread):
     def run(self):
         global task
         if task == {}:
             log("[ERROR] None file imported")
         else:
             log("[BEGIN] Crawl start")
+            wb = openpyxl.Workbook()
+            write_res_header(wb=wb)
             progress: int = 0
             for url in task.get("task_list"):
                 url_type = get_url_type(url=url)
                 if url_type == "solution_1":
-                    solution_1(url)
-                progress_bar.setValue(int(progress/len(task["task_list"])*100))
+                    res = solution_1(url)
+                elif url_type == "solution_2":
+                    res = solution_2(url)
+                else:
+                    res ={
+                        "found": -2,
+                        "video_id": "",
+                        "share": 0,
+                        "play": 0,
+                        "digg": 0,
+                        "comment": 0,
+                    }
+                print(res)
+                write_res_line(wb=wb,
+                               row=progress + 2,
+                               url=url,
+                               video_id=res["video_id"],
+                               comment=res["comment"],
+                               like=res["digg"],
+                               play=res["play"],
+                               share=res["share"],
+                               status=res["found"]
+                               )
+                progress_bar.setValue(int(progress / (len(task["task_list"]) - 1) * 100))
                 progress = progress + 1
-                print(int(progress/len(task["task_list"])))
+                print("progress", progress)
             log("[COMPLETE] Crawl complete")
 
 
-def get_tiktok_data_from_api(except_id: str, rsp_json: dict)-> dict:
+def get_tiktok_data_from_api(except_id: str, rsp_json: dict) -> dict:
     try:
         itemList = rsp_json["itemList"]
         for item in itemList:
@@ -227,6 +274,7 @@ def get_tiktok_data_from_api(except_id: str, rsp_json: dict)-> dict:
                 comment = item["stats"]["commentCount"]
                 return {
                     "found": 1,
+                    "video_id": except_id,
                     "share": share,
                     "play": play,
                     "digg": digg,
@@ -234,6 +282,7 @@ def get_tiktok_data_from_api(except_id: str, rsp_json: dict)-> dict:
                 }
         return {
             "found": 0,
+            "video_id": except_id,
             "share": 0,
             "play": 0,
             "digg": 0,
@@ -242,9 +291,39 @@ def get_tiktok_data_from_api(except_id: str, rsp_json: dict)-> dict:
     except KeyError:
         return {
             "found": -1,
+            "video_id": except_id,
             "share": 0,
             "play": 0,
             "digg": 0,
             "comment": 0,
         }
 
+
+def write_res_line(wb: Workbook, row: int, url: str, video_id: str, status: int, like: int, comment: int, share: int, play: int):
+    status_dict = {
+        -1: "联系徐硕改代码",
+        1: "Success",
+        0: "Video lose efficacy",
+        -2: "Bad URL or this website has no solution"
+    }
+    wb.worksheets[0].cell(row=row, column=1, value=url)
+    wb.worksheets[0].cell(row=row, column=2, value=video_id)
+    wb.worksheets[0].cell(row=row, column=3, value=status_dict[status])
+    wb.worksheets[0].cell(row=row, column=4, value=like)
+    wb.worksheets[0].cell(row=row, column=5, value=comment)
+    wb.worksheets[0].cell(row=row, column=6, value=share)
+    wb.worksheets[0].cell(row=row, column=7, value=play)
+    wb.save(filename="output.xlsx")
+    log(f"[Save] Save id = {video_id} success")
+
+
+def write_res_header(wb: Workbook):
+    wb.worksheets[0].cell(row=1, column=1, value="URL")
+    wb.worksheets[0].cell(row=1, column=2, value="VideoID")
+    wb.worksheets[0].cell(row=1, column=3, value="Status")
+    wb.worksheets[0].cell(row=1, column=4, value="LikesCount")
+    wb.worksheets[0].cell(row=1, column=5, value="CommentsCount")
+    wb.worksheets[0].cell(row=1, column=6, value="SharesCount")
+    wb.worksheets[0].cell(row=1, column=7, value="PlaysCount")
+    wb.save(filename="output.xlsx")
+    log(f"[Save] Save header success")
