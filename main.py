@@ -1,8 +1,8 @@
-import ui
+import internal
 
 
 def main():
-    ui.render_ui()
+    internal.render_ui()
     pass
 
 

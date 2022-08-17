@@ -4,7 +4,7 @@ import openpyxl
 import requests
 from PyQt6 import QtCore
 from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QFileDialog, QListView
+from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QFileDialog, QListView, QProgressBar
 import sys
 
 # 窗口size
@@ -32,6 +32,7 @@ crawl_button: QPushButton
 import_button: QPushButton
 text_box: QListView
 test_button: QPushButton
+progress_bar: QProgressBar
 file: str
 task: dict = {}
 string_list_model = QStringListModel()
@@ -81,6 +82,12 @@ def render_ui():
     import_button.setText("导入表格")
     import_button.move(int(window_width / 3 * 1 - button_width / 2), int(window_height - edge_distance - button_height))
     import_button.clicked.connect(handle_import_button_click)
+
+    # 爬取进度条
+    global progress_bar
+    progress_bar = QProgressBar(window)
+    progress_bar.resize(window_width - 2 * edge_distance, 15)
+    progress_bar.move(edge_distance, 3)
 
     window.show()
     sys.exit(app.exec())
@@ -198,10 +205,15 @@ class CrawlThread (QThread):
             log("[ERROR] None file imported")
         else:
             log("[BEGIN] Crawl start")
+            progress: int = 0
             for url in task.get("task_list"):
                 url_type = get_url_type(url=url)
                 if url_type == "solution_1":
                     solution_1(url)
+                progress_bar.setValue(int(progress/len(task["task_list"])*100))
+                progress = progress + 1
+                print(int(progress/len(task["task_list"])))
+            log("[COMPLETE] Crawl complete")
 
 
 def get_tiktok_data_from_api(except_id: str, rsp_json: dict)-> dict:
@@ -235,3 +247,4 @@ def get_tiktok_data_from_api(except_id: str, rsp_json: dict)-> dict:
             "digg": 0,
             "comment": 0,
         }
+
