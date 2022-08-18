@@ -6,6 +6,7 @@ from PyQt6 import QtCore
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QFileDialog, QListView, QProgressBar
 import sys
+from numba.core import event
 
 # 窗口size
 from PyQt6.QtCore import QThread, QStringListModel
@@ -38,6 +39,7 @@ task: dict = {}
 string_list_model = QStringListModel()
 logList = ['[Welcome] QAQ']
 string_list_model.setStringList(logList)
+progress: int = 0
 
 font: QFont = QFont("Consolas")
 
@@ -52,9 +54,11 @@ def render_ui():
     # 获取窗口
     app = QApplication(sys.argv)
     global window
-    window = QWidget()
+    window = QWindows()
 
     # 设置标题，尺寸和禁用拉伸
+
+
     window.resize(window_width, window_height)
     window.setWindowTitle("短视频播放量爬虫（0.0）")
     window.setFixedSize(window.width(), window.height())
@@ -87,7 +91,6 @@ def render_ui():
     progress_bar = QProgressBar(window)
     progress_bar.resize(window_width - 2 * edge_distance, 15)
     progress_bar.move(edge_distance, 3)
-
     window.show()
     sys.exit(app.exec())
 
@@ -230,7 +233,7 @@ class CrawlThread(QThread):
             log("[BEGIN] Crawl start")
             wb = openpyxl.Workbook()
             write_res_header(wb=wb)
-            progress: int = 0
+            global progress
             for url in task.get("task_list"):
                 url_type = get_url_type(url=url)
                 if url_type == "solution_1":
@@ -259,7 +262,6 @@ class CrawlThread(QThread):
                                )
                 progress_bar.setValue(int(progress / (len(task["task_list"]) - 1) * 100))
                 progress = progress + 1
-                print("progress", progress)
             log("[COMPLETE] Crawl complete")
 
 
@@ -314,7 +316,7 @@ def write_res_line(wb: Workbook, row: int, url: str, video_id: str, status: int,
     wb.worksheets[0].cell(row=row, column=6, value=share)
     wb.worksheets[0].cell(row=row, column=7, value=play)
     wb.save(filename="output.xlsx")
-    log(f"[Save] Save id = {video_id} success")
+    log(f"[SAVE] Save id = {video_id} success")
 
 
 def write_res_header(wb: Workbook):
@@ -326,4 +328,25 @@ def write_res_header(wb: Workbook):
     wb.worksheets[0].cell(row=1, column=6, value="SharesCount")
     wb.worksheets[0].cell(row=1, column=7, value="PlaysCount")
     wb.save(filename="output.xlsx")
-    log(f"[Save] Save header success")
+    log(f"[SAVE] Save header success")
+
+
+class QWindows(QWidget):
+    def enterEvent(self, a0: event) -> None:
+        global text_box
+        global font
+        text_box = QListView(window)
+        text_box.move(edge_distance, edge_distance)
+        text_box.resize(window_width - 2 * edge_distance, window_height - button_height - 3 * edge_distance)
+        text_box.setModel(string_list_model)
+        text_box.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        global progress_bar
+        progress_bar.hide()
+        progress_bar = QProgressBar(window)
+        progress_bar.resize(window_width - 2 * edge_distance, 15)
+        progress_bar.move(edge_distance, 3)
+        global progress
+        if task != {}:
+            progress_bar.setValue(int(progress / (len(task["task_list"]) - 1) * 100))
+            print(int(progress / (len(task["task_list"]) - 1) * 100))
+        progress_bar.show()
