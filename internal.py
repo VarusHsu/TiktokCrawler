@@ -315,7 +315,7 @@ def write_res_line(wb: Workbook, row: int, url: str, video_id: str, status: int,
     wb.worksheets[0].cell(row=row, column=5, value=comment)
     wb.worksheets[0].cell(row=row, column=6, value=share)
     wb.worksheets[0].cell(row=row, column=7, value=play)
-    wb.save(filename="Users/rockey220224/Desktop/output.xlsx")
+    wb.save(filename="/Users/rockey220224/Desktop/output.xlsx")
     log(f"[SAVE] Save id = {video_id} success")
 
 
@@ -327,7 +327,7 @@ def write_res_header(wb: Workbook):
     wb.worksheets[0].cell(row=1, column=5, value="CommentsCount")
     wb.worksheets[0].cell(row=1, column=6, value="SharesCount")
     wb.worksheets[0].cell(row=1, column=7, value="PlaysCount")
-    wb.save(filename="Users/rockey220224/Desktop/output.xlsx")
+    wb.save(filename="/Users/rockey220224/Desktop/output.xlsx")
     log(f"[SAVE] Save header success")
 
 

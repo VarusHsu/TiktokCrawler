@@ -7,7 +7,7 @@
 * 打包命令
 ```shell
   py2applet --make-setup main.py
-  python setup.py py2app 
+  python3 setup.py py2app 
 ```
 
 * 运行命令
