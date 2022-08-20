@@ -1,5 +1,4 @@
 import tkinter
-from tkinter import ttk
 
 button_width: int = 7
 button_height: int = 1
@@ -22,9 +21,6 @@ def render_ui():
     global import_xlsx_button
 
     global pixel_virtual
-
-    style = ttk.Style()
-    style.configure("BW.TLabel", foreground="black", background="white")
 
     root_windows = tkinter.Tk()
     root_windows.title("短视频播放量爬虫（0.0）")
