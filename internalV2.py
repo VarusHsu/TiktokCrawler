@@ -1,7 +1,8 @@
 import tkinter
+from tkinter import ttk
 
-button_width: int = 80
-button_height: int = 20
+button_width: int = 7
+button_height: int = 1
 
 
 root_windows: tkinter.Tk
@@ -22,6 +23,9 @@ def render_ui():
 
     global pixel_virtual
 
+    style = ttk.Style()
+    style.configure("BW.TLabel", foreground="black", background="white")
+
     root_windows = tkinter.Tk()
     root_windows.title("短视频播放量爬虫（0.0）")
     root_windows.geometry("500x314")
@@ -31,9 +35,7 @@ def render_ui():
     crawl_button = tkinter.Button(root_windows,
                                   text="Begin crawl",
                                   height=button_height,
-                                  width=button_width,
-                                  image=pixel_virtual,
-                                  compound="center")
+                                  width=button_width)
     crawl_button.pack()
 
 
