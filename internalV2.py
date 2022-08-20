@@ -6,6 +6,11 @@ windows_width = 500
 windows_height = 314
 edge_distance = 20
 
+crawl_button_anchor_x: int = 100
+crawl_button_anchor_y: int = 283
+import_xlsx_button_anchor_x: int = 300
+import_xlsx_button_anchor_y: int = 283
+
 
 root_windows: tkinter.Tk
 crawl_button: tkinter.Button
@@ -29,14 +34,13 @@ def render_ui():
                                   text="Begin crawl",
                                   height=button_height,
                                   width=button_width)
-    crawl_button.place(x=int(windows_width / 3 * 2), y=int(windows_height - edge_distance - button_height))
+    crawl_button.place(x=crawl_button_anchor_x, y=crawl_button_anchor_y)
 
     import_xlsx_button = tkinter.Button(root_windows,
                                         text="Import form",
                                         height=button_height,
                                         width=button_width)
-    import_xlsx_button.place(x=int(windows_width / 3), y=int(windows_height - edge_distance - button_height))
-
+    import_xlsx_button.place(x=import_xlsx_button_anchor_x, y=import_xlsx_button_anchor_y)
 
     root_windows.mainloop()
 
