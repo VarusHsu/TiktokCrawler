@@ -1,11 +1,23 @@
 import sys
+from threading import Thread
 
-from PyQt6.QtCore import QObject
-from PyQt6.QtWidgets import QApplication, QPushButton, QProgressBar, QListWidget, QWidget
+import openpyxl
+from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt6.QtWidgets import QApplication, QPushButton, QProgressBar, QListWidget, QWidget, QFileDialog
 from PyQt6 import QtCore
+from openpyxl.utils.exceptions import InvalidFileException
+from openpyxl.workbook import Workbook
+from openpyxl.worksheet.worksheet import Worksheet
+import openpyxl
+
+
+class UpdateUISignals(QObject):
+    log_signal = pyqtSignal(str, str)
+    progress_bar_update_signal = pyqtSignal(int)
 
 
 class VideoCrawler(QObject):
+
     app: QApplication
     windows: QWidget
     crawl_button: QPushButton
@@ -21,8 +33,17 @@ class VideoCrawler(QObject):
 
     ms_token = "g8vXKy2fjhjd7xrrPcCU7Wfop7isL5KAuyjofBp061Mtaxm_fA5vZ_lAlj46mvE_NnR7x-m-022QnOLdb6Em6HbYv1qm-ek2LXKHh6aTtnLpk_Ke8h7MUTkvWAUZX0cQ1JhrowY="
 
-    file: str
+    file: str = ""
     task: dict = {}
+    task_list: []
+
+    update_ui_signals: UpdateUISignals
+
+    def __init__(self):
+        super().__init__()
+        self.update_ui_signals = UpdateUISignals()
+        self.update_ui_signals.progress_bar_update_signal.connect(self.handle_update_progress_bar_signal)
+        self.update_ui_signals.log_signal.connect(self.handle_log_signal)
 
     def render(self):
         self.app = QApplication(sys.argv)
@@ -55,7 +76,50 @@ class VideoCrawler(QObject):
         pass
 
     def handle_crawl_button_click(self):
+        def run():
+            pass
+        crawl_thread: Thread = Thread(target=run)
+        crawl_thread.start()
         pass
 
     def handle_import_button_click(self):
+        res = QFileDialog.getOpenFileNames()[0]
+        if len(res) != 0:
+            self.file = res[0]
+            self.log(log_type="FILE_IMPORT", log_text=f"Path:{self.file}.")
+            try:
+                self.task = self.read_xlsx()
+            except InvalidFileException:
+                self.log(log_type="ERROR", log_text=f"File '{self.file}' may not a xlsx file.")
+            else:
+                self.log(log_type="FILE_IMPORT", log_text="Xlsx file import success.")
+        else:
+            self.log(log_type="FILE_IMPORT", log_text="Cancel")
         pass
+
+    def handle_log_signal(self, log_type, log_text):
+        self.log_box.addItem(f"[{log_type}] {log_text}")
+        pass
+
+    def handle_update_progress_bar_signal(self, progress):
+        self.progress_bar.setValue(progress)
+        pass
+
+    def log(self, log_type, log_text):
+        self.log_box.addItem(f"[{log_type}] {log_text}")
+        pass
+
+    def read_xlsx(self) -> dict:
+        wb: Workbook = openpyxl.open(filename=self.file)
+        ws: Worksheet = wb.worksheets[0]
+        self.task_list = []
+        row: int = 2
+        while ws.cell(row, 1).value is not None:
+            self.task_list.append(ws.cell(row, 1).value)
+            row = row + 1
+        return {
+            'task_count': row,
+            'task_list': self.task_list
+        }
+
+
