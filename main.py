@@ -1,8 +1,8 @@
-import internal
+import internalV2
 
 
 def main():
-    internal.render_ui()
+    internalV2.render_ui()
     pass
 
 
