@@ -1,3 +1,5 @@
+# This file all code already deprecated
+
 import json
 
 import openpyxl
