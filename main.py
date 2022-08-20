@@ -1,8 +1,9 @@
-import internal
+import internalV2
 
 
 def main():
-    internal.render_ui()
+    app = internalV2.VideoCrawler()
+    app.render()
     pass
 
 
