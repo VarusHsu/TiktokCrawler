@@ -40,7 +40,7 @@ class VideoCrawler(QObject):
     task: dict = {}
     task_list: []
     progress: int = 0
-    output_path: str = "/home/varus/workspace/TiktokCrawler/output.xlsx"
+    output_path: str = "/Users/rockey211224/Desktop/output.xlsx"
 
     update_ui_signals: UpdateUISignals
 
@@ -103,7 +103,6 @@ class VideoCrawler(QObject):
                             "digg": 0,
                             "comment": 0,
                         }
-                    print(res)
                     self.write_res_line(wb=wb,
                                         row=self.progress + 2,
                                         url=url,
@@ -141,6 +140,7 @@ class VideoCrawler(QObject):
 
     def handle_log_signal(self, log_type, log_text):
         self.log_box.addItem(f"[{log_type}] {log_text}")
+        self.log_box.verticalScrollBar().setValue(self.log_box.verticalScrollBar().maximum())
         pass
 
     def handle_update_progress_bar_signal(self):
@@ -149,6 +149,7 @@ class VideoCrawler(QObject):
 
     def log(self, log_type, log_text):
         self.log_box.addItem(f"[{log_type}] {log_text}")
+        self.log_box.verticalScrollBar().setValue(self.log_box.verticalScrollBar().maximum())
         pass
 
     def read_xlsx(self) -> dict:
@@ -233,6 +234,8 @@ class VideoCrawler(QObject):
         except SSLError:
             self.update_ui_signals.log_signal.emit("ERROR", f"Max retries exceeded with URL '{url}'.")
             pass
+        except requests.exceptions.ConnectionError:
+            self.update_ui_signals.log_signal.emit("ERROR", "Internet error, maybe this error cause by VPN.")
         else:
             if response.status_code == 200 or response.status_code == 301:
                 self.update_ui_signals.log_signal.emit("GET", f"{response.status_code}: {url}.")
