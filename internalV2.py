@@ -3,10 +3,9 @@ import sys
 import time
 from threading import Thread
 
-
 import requests
 from PyQt6.QtCore import QObject, pyqtSignal
-from PyQt6.QtWidgets import QApplication, QPushButton, QProgressBar, QListWidget, QWidget, QFileDialog
+from PyQt6.QtWidgets import QApplication, QPushButton, QProgressBar, QListWidget, QWidget, QFileDialog, QLineEdit
 from PyQt6 import QtCore
 from bs4 import BeautifulSoup
 from openpyxl.utils.exceptions import InvalidFileException
@@ -21,31 +20,65 @@ class UpdateUISignals(QObject):
     progress_bar_update_signal = pyqtSignal()
 
 
+class AdjustConfigSignals(QObject):
+    adjust_output_path_signal = pyqtSignal(str)
+    adjust_begin_line_signal = pyqtSignal(int)
+
+
 class ConfigWindow(QWidget):
     config_window_width = 400
     config_window_height = 250
     button_width: int = 80
+    button_height: int = 20
+    line_edit_height: int = 20
+    line_edit_position_x = 80
     config_window_edge_distance = 10
 
     begin_line: int
     output_path: str
+
     windows: QWidget
     save_button: QPushButton
+    cancel_button: QPushButton
+    begin_line_edit_text: QLineEdit
+    output_path_edit_text: QLineEdit
 
-    def __init__(self, begin_line: int, output_path: str):
+    adjust_config_signals: AdjustConfigSignals
+
+    def __init__(self, begin_line: int, output_path: str, adjust_config_signals: AdjustConfigSignals):
         super().__init__()
+
+        self.adjust_config_signals = adjust_config_signals
+
         self.setWindowTitle("爬虫配置")
         self.resize(self.config_window_width, self.config_window_height)
         self.output_path = output_path
-        self.begin_line =begin_line
+        self.begin_line = begin_line
 
         self.save_button = QPushButton(self)
-        self.save_button.move(int(self.config_window_width/3)-int(self.button_width /2), self.config_window_height - self.config_window_edge_distance - self.button_height)
+        self.save_button.move(int(self.config_window_width / 3) - int(self.button_width / 2), self.config_window_height - self.config_window_edge_distance - self.button_height)
         self.save_button.setText("保存")
+        self.save_button.clicked.connect(self.handle_save_button_click)
 
         self.cancel_button = QPushButton(self)
-        self.cancel_button.move(int(self.config_window_width/3 * 2)-int(self.button_width /2), self.config_window_height - self.config_window_edge_distance - self.button_height)
+        self.cancel_button.move(int(self.config_window_width / 3 * 2) - int(self.button_width / 2), self.config_window_height - self.config_window_edge_distance - self.button_height)
+        self.cancel_button.clicked.connect(self.handle_cancel_button_click)
         self.cancel_button.setText("取消")
+
+        self.begin_line_edit_text = QLineEdit(self)
+        self.begin_line_edit_text.move(self.line_edit_position_x, self.config_window_edge_distance)
+
+        self.output_path_edit_text = QLineEdit(self)
+        self.output_path_edit_text.move(self.line_edit_position_x, self.config_window_edge_distance + self.config_window_edge_distance + self.line_edit_height)
+        self.output_path_edit_text.resize(300, 20)
+
+    def handle_save_button_click(self):
+        self.adjust_config_signals.adjust_output_path_signal.emit(self.output_path)
+        self.adjust_config_signals.adjust_begin_line_signal.emit(self.begin_line)
+        self.close()
+
+    def handle_cancel_button_click(self):
+        self.close()
 
 
 class VideoCrawler(QObject):
@@ -74,12 +107,16 @@ class VideoCrawler(QObject):
     begin_line: int = 2
 
     update_ui_signals: UpdateUISignals
+    adjust_config_signals: AdjustConfigSignals
 
     def __init__(self):
         super().__init__()
         self.update_ui_signals = UpdateUISignals()
+        self.adjust_config_signals = AdjustConfigSignals()
         self.update_ui_signals.progress_bar_update_signal.connect(self.handle_update_progress_bar_signal)
         self.update_ui_signals.log_signal.connect(self.handle_log_signal)
+        self.adjust_config_signals.adjust_begin_line_signal.connect(self.handle_adjust_begin_line)
+        self.adjust_config_signals.adjust_output_path_signal.connect(self.handle_adjust_output_path)
 
     def render(self):
         self.app = QApplication(sys.argv)
@@ -177,8 +214,7 @@ class VideoCrawler(QObject):
         pass
 
     def handle_config_button_click(self):
-        self.config_window = ConfigWindow(begin_line=self.begin_line, output_path=self.output_path)
-
+        self.config_window = ConfigWindow(begin_line=self.begin_line, output_path=self.output_path, adjust_config_signals=self.adjust_config_signals)
         self.config_window.show()
 
     def handle_log_signal(self, log_type, log_text):
@@ -188,6 +224,14 @@ class VideoCrawler(QObject):
 
     def handle_update_progress_bar_signal(self):
         self.progress_bar.setValue(int(self.progress / (len(self.task["task_list"]) - 1) * 100))
+        pass
+
+    def handle_adjust_output_path(self, path: str):
+        self.output_path = path
+        pass
+
+    def handle_adjust_begin_line(self, begin_line: int):
+        self.begin_line = begin_line
         pass
 
     def log(self, log_type, log_text):
@@ -338,7 +382,7 @@ class VideoCrawler(QObject):
                 "comment": 0,
             }
 
-    def tiktok_with_video_id_proc(self, url:str):
+    def tiktok_with_video_id_proc(self, url: str):
         video_id = self.get_tiktok_video_id(url)
         url_ = "https://www.tiktok.com/api/recommend/item_list/?aid=1988&app_language=es&app_name=tiktok_web&battery_info=0.44&browser_language=zh-CN&browser_name=Mozilla&browser_online=true&browser_platform=MacIntel&browser_version=5.0%20%28Macintosh%3B%20Intel%20Mac%20OS%20X%2010_15_7%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F104.0.0.0%20Safari%2F537.36&channel=tiktok_web&cookie_enabled=true&count=30&device_id=7106463322559923714&device_platform=web_pc&focus_state=true&from_page=video&history_len=1&insertedItemID=" + video_id + "&is_fullscreen=true&is_page_visible=true&os=mac&priority_region=&referer=&region=DE&screen_height=1920&screen_width=1080&tz_name=Asia%2FShanghai&webcast_language=es&msToken=" + ms_token
         response = self.request_get(url=url_, allow_redirects=False)
@@ -362,4 +406,3 @@ class VideoCrawler(QObject):
             self.update_ui_signals.log_signal.emit("ERROR", self.output_path)
             return False
         return True
-
