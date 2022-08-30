@@ -54,6 +54,7 @@ class VideoCrawler(QObject):
     task_list: []
     progress: int = 0
     output_path: str = "/Users/rockey220224/Desktop/output.xlsx"
+    begin_line: int = 2
 
     update_ui_signals: UpdateUISignals
 
@@ -105,6 +106,8 @@ class VideoCrawler(QObject):
             else:
                 self.update_ui_signals.log_signal.emit("BEGIN", "Crawl start")
                 wb = openpyxl.Workbook()
+                if not self.check_output_file(wb):
+                    return
                 self.write_res_header(wb=wb)
                 for url in self.task.get("task_list"):
                     url_type = self.get_url_type(url=url)
@@ -332,4 +335,13 @@ class VideoCrawler(QObject):
         else:
             self.update_ui_signals.log_signal.emit("FAILED", "Api response may issue")
         return res
+
+    def check_output_file(self, wb: Workbook) -> bool:
+        try:
+            wb.save(filename=self.output_path)
+        except FileNotFoundError:
+            self.update_ui_signals.log_signal.emit("ERROR", "Output file not found. Please check folder exits:")
+            self.update_ui_signals.log_signal.emit("ERROR", self.output_path)
+            return False
+        return True
 
