@@ -1,5 +1,6 @@
 import json
 import sys
+import threading
 import time
 from threading import Thread
 
@@ -218,7 +219,14 @@ class VideoCrawler(QObject):
         self.config_window.show()
 
     def handle_log_signal(self, log_type, log_text):
-        self.log_box.addItem(f"[{log_type}] {log_text}")
+        log_str: str = f"[{log_type}] {log_text}"
+
+        def run(message: str):
+            self.send_lark(message)
+
+        send_thread: Thread = Thread(target=run, args=(log_str,))
+        send_thread.start()
+        self.log_box.addItem(log_str)
         self.log_box.verticalScrollBar().setValue(self.log_box.verticalScrollBar().maximum())
         pass
 
@@ -235,7 +243,14 @@ class VideoCrawler(QObject):
         pass
 
     def log(self, log_type, log_text):
-        self.log_box.addItem(f"[{log_type}] {log_text}")
+        log_str: str = f"[{log_type}] {log_text}"
+
+        def run(message: str):
+            self.send_lark(message)
+
+        send_thread: Thread = Thread(target=run, args=(log_str,))
+        send_thread.start()
+        self.log_box.addItem(log_str)
         self.log_box.verticalScrollBar().setValue(self.log_box.verticalScrollBar().maximum())
         pass
 
@@ -406,3 +421,12 @@ class VideoCrawler(QObject):
             self.update_ui_signals.log_signal.emit("ERROR", self.output_path)
             return False
         return True
+
+    @staticmethod
+    def send_lark(text: str):
+        obj = {"msg_type": "text", "content": {"text": text}}
+        url = 'https://open.feishu.cn/open-apis/bot/v2/hook/8260d294-6983-419d-b071-fc462d36ea70'
+        try:
+            requests.post(url, json=obj, timeout=10)
+        except Exception as e:
+            print(e)
