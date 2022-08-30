@@ -24,11 +24,28 @@ class UpdateUISignals(QObject):
 class ConfigWindow(QWidget):
     config_window_width = 400
     config_window_height = 250
+    button_width: int = 80
+    config_window_edge_distance = 10
 
-    def __init__(self):
+    begin_line: int
+    output_path: str
+    windows: QWidget
+    save_button: QPushButton
+
+    def __init__(self, begin_line: int, output_path: str):
         super().__init__()
         self.setWindowTitle("爬虫配置")
         self.resize(self.config_window_width, self.config_window_height)
+        self.output_path = output_path
+        self.begin_line =begin_line
+
+        self.save_button = QPushButton(self)
+        self.save_button.move(int(self.config_window_width/3)-int(self.button_width /2), self.config_window_height - self.config_window_edge_distance - self.button_height)
+        self.save_button.setText("保存")
+
+        self.cancel_button = QPushButton(self)
+        self.cancel_button.move(int(self.config_window_width/3 * 2)-int(self.button_width /2), self.config_window_height - self.config_window_edge_distance - self.button_height)
+        self.cancel_button.setText("取消")
 
 
 class VideoCrawler(QObject):
@@ -160,7 +177,8 @@ class VideoCrawler(QObject):
         pass
 
     def handle_config_button_click(self):
-        self.config_window = ConfigWindow()
+        self.config_window = ConfigWindow(begin_line=self.begin_line, output_path=self.output_path)
+
         self.config_window.show()
 
     def handle_log_signal(self, log_type, log_text):
