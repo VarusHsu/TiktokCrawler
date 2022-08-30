@@ -6,7 +6,7 @@ from threading import Thread
 
 import requests
 from PyQt6.QtCore import QObject, pyqtSignal
-from PyQt6.QtWidgets import QApplication, QPushButton, QProgressBar, QListWidget, QWidget, QFileDialog, QLineEdit
+from PyQt6.QtWidgets import QApplication, QPushButton, QProgressBar, QListWidget, QWidget, QFileDialog, QLineEdit, QLabel
 from PyQt6 import QtCore
 from bs4 import BeautifulSoup
 from openpyxl.utils.exceptions import InvalidFileException
@@ -34,6 +34,7 @@ class ConfigWindow(QWidget):
     line_edit_height: int = 20
     line_edit_position_x = 80
     config_window_edge_distance = 10
+    output_line_edit_width = 300
 
     begin_line: int
     output_path: str
@@ -43,13 +44,17 @@ class ConfigWindow(QWidget):
     cancel_button: QPushButton
     begin_line_edit_text: QLineEdit
     output_path_edit_text: QLineEdit
+    begin_line_label: QLabel
+    output_path_label: QLabel
 
     adjust_config_signals: AdjustConfigSignals
+    update_ui_signals: UpdateUISignals
 
-    def __init__(self, begin_line: int, output_path: str, adjust_config_signals: AdjustConfigSignals):
+    def __init__(self, begin_line: int, output_path: str, adjust_config_signals: AdjustConfigSignals, update_ui_signals: UpdateUISignals):
         super().__init__()
 
         self.adjust_config_signals = adjust_config_signals
+        self.update_ui_signals = update_ui_signals
 
         self.setWindowTitle("爬虫配置")
         self.resize(self.config_window_width, self.config_window_height)
@@ -68,17 +73,35 @@ class ConfigWindow(QWidget):
 
         self.begin_line_edit_text = QLineEdit(self)
         self.begin_line_edit_text.move(self.line_edit_position_x, self.config_window_edge_distance)
+        self.begin_line_edit_text.setText(str(self.begin_line))
+        self.line_edit_height = self.begin_line_edit_text.height()
 
         self.output_path_edit_text = QLineEdit(self)
         self.output_path_edit_text.move(self.line_edit_position_x, self.config_window_edge_distance + self.config_window_edge_distance + self.line_edit_height)
-        self.output_path_edit_text.resize(300, 20)
+        self.output_path_edit_text.resize(self.output_line_edit_width, self.line_edit_height)
+        self.output_path_edit_text.setText(self.output_path)
+
+        self.begin_line_label = QLabel(self)
+        self.begin_line_label.setText("起点行数")
+        self.begin_line_label.move(self.config_window_edge_distance, self.config_window_edge_distance)
+
+        self.output_path_label = QLabel(self)
+        self.output_path_label.setText("输出路径")
+        self.output_path_label.move(self.config_window_edge_distance, self.config_window_edge_distance + self.config_window_edge_distance + self.line_edit_height)
+
+
 
     def handle_save_button_click(self):
+        self.begin_line = int(self.begin_line_edit_text.text())
+        self.output_path = self.output_path_edit_text.text()
         self.adjust_config_signals.adjust_output_path_signal.emit(self.output_path)
         self.adjust_config_signals.adjust_begin_line_signal.emit(self.begin_line)
+        self.update_ui_signals.log_signal.emit("CONFIG", f"Update begin line = {self.begin_line_edit_text.text()} success.")
+        self.update_ui_signals.log_signal.emit("CONFIG", f"Update output path = {self.output_path_edit_text.text()} success.")
         self.close()
 
     def handle_cancel_button_click(self):
+        self.update_ui_signals.log_signal.emit("CONFIG", "Cancel.")
         self.close()
 
 
@@ -105,6 +128,7 @@ class VideoCrawler(QObject):
     task_list: []
     progress: int = 0
     output_path: str = "/Users/rockey220224/Desktop/output.xlsx"
+    file_name = ""
     begin_line: int = 2
 
     update_ui_signals: UpdateUISignals
@@ -156,6 +180,7 @@ class VideoCrawler(QObject):
 
     def handle_crawl_button_click(self):
         def run():
+            self.file_name = time.strftime("%Y-%m-%d_%H:%M:%S.xlsx", time.localtime())
             if self.task == {}:
                 self.update_ui_signals.log_signal.emit("ERROR", "None file imported.")
             else:
@@ -215,7 +240,10 @@ class VideoCrawler(QObject):
         pass
 
     def handle_config_button_click(self):
-        self.config_window = ConfigWindow(begin_line=self.begin_line, output_path=self.output_path, adjust_config_signals=self.adjust_config_signals)
+        self.config_window = ConfigWindow(begin_line=self.begin_line,
+                                          output_path=self.output_path,
+                                          adjust_config_signals=self.adjust_config_signals,
+                                          update_ui_signals=self.update_ui_signals)
         self.config_window.show()
 
     def handle_log_signal(self, log_type, log_text):
@@ -258,7 +286,7 @@ class VideoCrawler(QObject):
         wb: Workbook = openpyxl.open(filename=self.file)
         ws: Worksheet = wb.worksheets[0]
         self.task_list = []
-        row: int = 2
+        row: int = self.begin_line
         while ws.cell(row, 1).value is not None:
             self.task_list.append(ws.cell(row, 1).value)
             row = row + 1
@@ -266,6 +294,12 @@ class VideoCrawler(QObject):
             'task_count': row,
             'task_list': self.task_list
         }
+
+    def get_abs_output_path(self) -> str:
+        if self.output_path.endswith('/'):
+            return self.output_path + self.file_name
+        else:
+            return self.output_path + '/' + self.file_name
 
     def write_res_line(self, wb: Workbook, row: int, url: str, video_id: str, status: int, like: int, comment: int, share: int, play: int):
         status_dict = {
@@ -282,10 +316,10 @@ class VideoCrawler(QObject):
             wb.worksheets[0].cell(row=row, column=5, value=comment)
             wb.worksheets[0].cell(row=row, column=6, value=share)
             wb.worksheets[0].cell(row=row, column=7, value=play)
-        wb.save(filename=self.output_path)
+        wb.save(filename=self.get_abs_output_path())
         self.log(log_type="SAVE", log_text=f"Save id = {video_id} success.")
 
-    def write_res_header(self, wb: Workbook):
+    def write_res_header(self, wb: Workbook, ):
         wb.worksheets[0].cell(row=1, column=1, value="URL")
         wb.worksheets[0].cell(row=1, column=2, value="VideoID")
         wb.worksheets[0].cell(row=1, column=3, value="Status")
@@ -293,7 +327,7 @@ class VideoCrawler(QObject):
         wb.worksheets[0].cell(row=1, column=5, value="CommentsCount")
         wb.worksheets[0].cell(row=1, column=6, value="SharesCount")
         wb.worksheets[0].cell(row=1, column=7, value="PlaysCount")
-        wb.save(filename=self.output_path)
+        wb.save(filename=self.get_abs_output_path())
         self.log(log_type="SAVE", log_text="Save header success")
 
     def get_url_type(self, url: str):
@@ -415,7 +449,7 @@ class VideoCrawler(QObject):
 
     def check_output_file(self, wb: Workbook) -> bool:
         try:
-            wb.save(filename=self.output_path)
+            wb.save(filename=self.get_abs_output_path())
         except FileNotFoundError:
             self.update_ui_signals.log_signal.emit("ERROR", "Output file not found. Please check folder exits:")
             self.update_ui_signals.log_signal.emit("ERROR", self.output_path)
