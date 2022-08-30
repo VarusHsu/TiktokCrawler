@@ -21,13 +21,25 @@ class UpdateUISignals(QObject):
     progress_bar_update_signal = pyqtSignal()
 
 
+class ConfigWindow(QWidget):
+    config_window_width = 400
+    config_window_height = 250
+
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("爬虫配置")
+        self.resize(self.config_window_width, self.config_window_height)
+
+
 class VideoCrawler(QObject):
     app: QApplication
     windows: QWidget
     crawl_button: QPushButton
     import_button: QPushButton
+    config_button: QPushButton
     progress_bar: QProgressBar
     log_box: QListWidget
+    config_window: ConfigWindow
 
     window_width: int = 500
     window_height: int = 314
@@ -65,13 +77,18 @@ class VideoCrawler(QObject):
 
         self.crawl_button = QPushButton(self.windows)
         self.crawl_button.setText("开始爬取")
-        self.crawl_button.move(int(self.window_width / 3 * 2 - self.button_width / 2), int(self.window_height - self.edge_distance - self.button_height))
+        self.crawl_button.move(int(self.window_width / 4 * 1 - self.button_width / 2), int(self.window_height - self.edge_distance - self.button_height))
         self.crawl_button.clicked.connect(self.handle_crawl_button_click)
 
         self.import_button = QPushButton(self.windows)
         self.import_button.setText("导入表格")
-        self.import_button.move(int(self.window_width / 3 * 1 - self.button_width / 2), int(self.window_height - self.edge_distance - self.button_height))
+        self.import_button.move(int(self.window_width / 4 * 2 - self.button_width / 2), int(self.window_height - self.edge_distance - self.button_height))
         self.import_button.clicked.connect(self.handle_import_button_click)
+
+        self.config_button = QPushButton(self.windows)
+        self.config_button.setText("配置爬虫")
+        self.config_button.move(int(self.window_width / 4 * 3 - self.button_width / 2), int(self.window_height - self.edge_distance - self.button_height))
+        self.config_button.clicked.connect(self.handle_config_button_click)
 
         self.progress_bar = QProgressBar(self.windows)
         self.progress_bar.resize(self.window_width - 2 * self.edge_distance, 15)
@@ -138,6 +155,10 @@ class VideoCrawler(QObject):
         else:
             self.log(log_type="FILE_IMPORT", log_text="Cancel")
         pass
+
+    def handle_config_button_click(self):
+        self.config_window = ConfigWindow()
+        self.config_window.show()
 
     def handle_log_signal(self, log_type, log_text):
         self.log_box.addItem(f"[{log_type}] {log_text}")
