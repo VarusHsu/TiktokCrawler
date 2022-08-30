@@ -1,5 +1,6 @@
 import json
 import sys
+import time
 from threading import Thread
 
 
@@ -233,6 +234,10 @@ class VideoCrawler(QObject):
             return None
         except SSLError:
             self.update_ui_signals.log_signal.emit("ERROR", f"Max retries exceeded with URL '{url}'.")
+            self.update_ui_signals.log_signal.emit("TIPS", "Let me have a rest.")
+            self.update_ui_signals.log_signal.emit("TIPS", "Crawl will continue after 20s.")
+            time.sleep(20)
+            return request_get(url=url, allow_redirects=allow_redirects)
             pass
         except requests.exceptions.ConnectionError:
             self.update_ui_signals.log_signal.emit("ERROR", "Internet error, maybe this error cause by VPN.")
