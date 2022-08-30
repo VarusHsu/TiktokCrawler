@@ -176,10 +176,11 @@ class VideoCrawler(QObject):
         wb.worksheets[0].cell(row=row, column=1, value=url)
         wb.worksheets[0].cell(row=row, column=2, value=video_id)
         wb.worksheets[0].cell(row=row, column=3, value=status_dict[status])
-        wb.worksheets[0].cell(row=row, column=4, value=like)
-        wb.worksheets[0].cell(row=row, column=5, value=comment)
-        wb.worksheets[0].cell(row=row, column=6, value=share)
-        wb.worksheets[0].cell(row=row, column=7, value=play)
+        if status != -2:
+            wb.worksheets[0].cell(row=row, column=4, value=like)
+            wb.worksheets[0].cell(row=row, column=5, value=comment)
+            wb.worksheets[0].cell(row=row, column=6, value=share)
+            wb.worksheets[0].cell(row=row, column=7, value=play)
         wb.save(filename=self.output_path)
         self.log(log_type="SAVE", log_text=f"Save id = {video_id} success.")
 
