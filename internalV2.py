@@ -213,6 +213,15 @@ class VideoCrawler(QObject):
                             "digg": 0,
                             "comment": 0,
                         }
+                    if res is None:
+                        res = {
+                            "video_id": "",
+                            "comment": 0,
+                            "found": -3,
+                            "digg": 0,
+                            "play": 0,
+                            "share": 0,
+                        }
                     self.write_res_line(wb=wb,
                                         row=self.progress + 2,
                                         url=url,
@@ -221,8 +230,7 @@ class VideoCrawler(QObject):
                                         like=res["digg"],
                                         play=res["play"],
                                         share=res["share"],
-                                        status=res["found"]
-                                        )
+                                        status=res["found"])
                     self.update_ui_signals.progress_bar_update_signal.emit()
                     self.progress = self.progress + 1
                 self.update_ui_signals.log_signal.emit("COMPLETE", "Crawl complete.")
@@ -315,12 +323,13 @@ class VideoCrawler(QObject):
             -1: "联系徐硕改代码",
             1: "Success",
             0: "Video lose efficacy",
-            -2: "Bad URL or this website has no solution"
+            -2: "Bad URL or this website has no solution",
+            -3: "Internet Error"
         }
         wb.worksheets[0].cell(row=row, column=1, value=url)
         wb.worksheets[0].cell(row=row, column=2, value=video_id)
         wb.worksheets[0].cell(row=row, column=3, value=status_dict[status])
-        if status != -2:
+        if status not in [-1,0,-2, -3]:
             wb.worksheets[0].cell(row=row, column=4, value=like)
             wb.worksheets[0].cell(row=row, column=5, value=comment)
             wb.worksheets[0].cell(row=row, column=6, value=share)
@@ -373,7 +382,7 @@ class VideoCrawler(QObject):
             "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36"
         }
         try:
-            response = requests.get(url, allow_redirects=allow_redirects, headers=headers)
+            response = requests.get(url, allow_redirects=allow_redirects, headers=headers, timeout=60)
         except MissingSchema:
             self.update_ui_signals.log_signal.emit("ERROR", f"Invalid URL '{url}', perhaps you meant 'https://{url}'.")
             return None
@@ -382,10 +391,11 @@ class VideoCrawler(QObject):
             self.update_ui_signals.log_signal.emit("TIPS", "Let me have a rest.")
             self.update_ui_signals.log_signal.emit("TIPS", "Crawl will continue after 20s.")
             time.sleep(20)
-            return request_get(url=url, allow_redirects=allow_redirects)
-            pass
+            return None
         except requests.exceptions.ConnectionError:
             self.update_ui_signals.log_signal.emit("ERROR", "Internet error, maybe this error cause by VPN.")
+            time.sleep(20)
+            return None
         else:
             if response.status_code == 200 or response.status_code == 301:
                 self.update_ui_signals.log_signal.emit("GET", f"{response.status_code}: {url}.")
