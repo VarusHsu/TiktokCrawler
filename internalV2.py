@@ -13,6 +13,8 @@ from openpyxl.utils.exceptions import InvalidFileException
 from openpyxl.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 import openpyxl
+from PyQt6.QtGui import QIntValidator
+
 from requests.exceptions import MissingSchema, SSLError
 
 
@@ -74,11 +76,10 @@ class ConfigWindow(QWidget):
         self.begin_line_edit_text = QLineEdit(self)
         self.begin_line_edit_text.move(self.line_edit_position_x, self.config_window_edge_distance)
         self.begin_line_edit_text.setText(str(self.begin_line))
-        self.line_edit_height = self.begin_line_edit_text.height()
+        self.begin_line_edit_text.setValidator(QIntValidator())
 
         self.output_path_edit_text = QLineEdit(self)
         self.output_path_edit_text.move(self.line_edit_position_x, self.config_window_edge_distance + self.config_window_edge_distance + self.line_edit_height)
-        self.output_path_edit_text.resize(self.output_line_edit_width, self.line_edit_height)
         self.output_path_edit_text.setText(self.output_path)
 
         self.begin_line_label = QLabel(self)
@@ -92,12 +93,20 @@ class ConfigWindow(QWidget):
 
 
     def handle_save_button_click(self):
-        self.begin_line = int(self.begin_line_edit_text.text())
-        self.output_path = self.output_path_edit_text.text()
+        try:
+            self.begin_line = int(self.begin_line_edit_text.text())
+        except ValueError:
+            self.begin_line = 2
+            self.update_ui_signals.log_signal.emit("ERROR", "Begin line may illegal.")
+        else:
+            self.update_ui_signals.log_signal.emit("CONFIG", f"Update begin line = {self.begin_line_edit_text.text()} success.")
+        if self.output_path_edit_text.text() != "":
+            self.output_path = self.output_path_edit_text.text()
+            self.update_ui_signals.log_signal.emit("CONFIG", f"Update output path = {self.output_path_edit_text.text()} success.")
+        else:
+            self.update_ui_signals.log_signal.emit("ERROR", "Path is null.")
         self.adjust_config_signals.adjust_output_path_signal.emit(self.output_path)
         self.adjust_config_signals.adjust_begin_line_signal.emit(self.begin_line)
-        self.update_ui_signals.log_signal.emit("CONFIG", f"Update begin line = {self.begin_line_edit_text.text()} success.")
-        self.update_ui_signals.log_signal.emit("CONFIG", f"Update output path = {self.output_path_edit_text.text()} success.")
         self.close()
 
     def handle_cancel_button_click(self):
@@ -127,7 +136,7 @@ class VideoCrawler(QObject):
     task: dict = {}
     task_list: []
     progress: int = 0
-    output_path: str = "/Users/rockey220224/Desktop/output.xlsx"
+    output_path: str = "/Users/rockey220224/Desktop/"
     file_name = ""
     begin_line: int = 2
 
@@ -461,6 +470,6 @@ class VideoCrawler(QObject):
         obj = {"msg_type": "text", "content": {"text": text}}
         url = 'https://open.feishu.cn/open-apis/bot/v2/hook/8260d294-6983-419d-b071-fc462d36ea70'
         try:
-            requests.post(url, json=obj, timeout=10)
+            requests.post(url, json=obj, timeout=60)
         except Exception as e:
             print(e)
