@@ -40,7 +40,7 @@ class VideoCrawler(QObject):
     task: dict = {}
     task_list: []
     progress: int = 0
-    output_path: str = "/Users/rockey211224/Desktop/output.xlsx"
+    output_path: str = "/Users/rockey220224/Desktop/output.xlsx"
 
     update_ui_signals: UpdateUISignals
 
