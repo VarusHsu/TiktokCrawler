@@ -2,6 +2,7 @@ import json
 import sys
 import time
 from threading import Thread
+from enum import Enum
 
 import requests
 from PyQt6.QtCore import QObject, pyqtSignal
@@ -15,6 +16,11 @@ import openpyxl
 from PyQt6.QtGui import QIntValidator
 
 from requests.exceptions import MissingSchema, SSLError
+
+
+class ResultStatus(Enum):
+    Success = "success"
+    MayNetworkError = "mayNetworkError"
 
 
 class UpdateUISignals(QObject):
@@ -556,6 +562,9 @@ class UserByHashtag(QObject):
 
     task_list = []
 
+    output_path = "/Users/rockey211224/Desktop"
+    file_name = ""
+
     app: QApplication
     windows: QWidget
     crawl_button: QPushButton
@@ -615,6 +624,17 @@ class UserByHashtag(QObject):
     def handle_crawl_button_click(self):
         if len(self.task_list) == 0:
             self.log("ERROR", "No task to run, input you hashtags and click '格式校验' button.")
+
+        def run():
+            self.file_name = time.strftime("%Y-%m-%d_%H:%M:%S.xlsx", time.localtime())
+            self.update_ui_signals.log_signal.emit("BEGIN", "Crawl start")
+            wb = openpyxl.Workbook()
+            if not self.check_output_file(wb):
+                return
+            self.write_head(wb=wb)
+
+            self.update_ui_signals.log_signal.emit("COMPLETE", "Crawl complete.")
+
         pass
 
     def handle_verify_button_click(self):
@@ -723,3 +743,67 @@ class UserByHashtag(QObject):
         self.log("SUCCESS", f"Get hashtag {hashtag} info success")
         self.log("SUCCESS", f"id: {hashtag_info['id']}, title: {hashtag_info['title']}, videoCount: {hashtag_info['videoCount']}, viewCount: {hashtag_info['viewCount']}")
         return hashtag_info
+
+    def write_head(self, wb: Workbook):
+        wb.worksheets[0].cell(row=1, column=1, value="Status")
+        wb.worksheets[0].cell(row=1, column=2, value="HashtagName")
+        wb.worksheets[0].cell(row=1, column=3, value="HashtagVideoCount")
+        wb.worksheets[0].cell(row=1, column=4, value="HashtagViewCount")
+        wb.worksheets[0].cell(row=1, column=5, value="UserNickname")
+        wb.worksheets[0].cell(row=1, column=6, value="UserSignature")
+        wb.worksheets[0].cell(row=1, column=7, value="UserHomePage")
+        wb.worksheets[0].cell(row=1, column=8, value="UserDiggCount")
+        wb.worksheets[0].cell(row=1, column=9, value="UserFollowerCount")
+        wb.worksheets[0].cell(row=1, column=10, value="UserHeartCount")
+        wb.worksheets[0].cell(row=1, column=11, value="UserVideoCount")
+        wb.worksheets[0].cell(row=1, column=12, value="VideoPage")
+        wb.worksheets[0].cell(row=1, column=13, value="VideoDiggCount")
+        wb.worksheets[0].cell(row=1, column=14, value="VideoPlayCount")
+        wb.worksheets[0].cell(row=1, column=15, value="VideoShareCount")
+        wb.worksheets[0].cell(row=1, column=16, value="VideoCommentCount")
+        wb.worksheets[0].cell(row=1, column=17, value="VideoCreateTime")
+        wb.worksheets[0].cell(row=1, column=18, value="VideoDescription")
+        wb.worksheets[0].cell(row=1, column=19, value="VideoURL")
+        wb.save(filename=self.get_abs_output_path())
+        self.log(log_type="SAVE", log_text="Save header success")
+        pass
+
+    def write_line(self, wb: Workbook, data: dict, cur_row: int) -> int:
+        wb.worksheets[0].cell(row=cur_row, column=1, value=data["Status"])
+        if data["Status"] == ResultStatus.Success:
+            wb.worksheets[0].cell(row=1, column=2, value=data["HashtagName"])
+            wb.worksheets[0].cell(row=1, column=3, value=data["HashtagVideoCount"])
+            wb.worksheets[0].cell(row=1, column=4, value=data["HashtagViewCount"])
+            wb.worksheets[0].cell(row=1, column=5, value=data["UserNickname"])
+            wb.worksheets[0].cell(row=1, column=6, value=data["UserSignature"])
+            wb.worksheets[0].cell(row=1, column=7, value=data["UserHomePage"])
+            wb.worksheets[0].cell(row=1, column=8, value=data["UserDiggCount"])
+            wb.worksheets[0].cell(row=1, column=9, value=data["UserFollowerCount"])
+            wb.worksheets[0].cell(row=1, column=10, value=data["UserHeartCount"])
+            wb.worksheets[0].cell(row=1, column=11, value=data["UserVideoCount"])
+            wb.worksheets[0].cell(row=1, column=12, value=data["VideoPage"])
+            wb.worksheets[0].cell(row=1, column=13, value=data["VideoDiggCount"])
+            wb.worksheets[0].cell(row=1, column=14, value=data["VideoPlayCount"])
+            wb.worksheets[0].cell(row=1, column=15, value=data["VideoShareCount"])
+            wb.worksheets[0].cell(row=1, column=16, value=data["VideoCommentCount"])
+            wb.worksheets[0].cell(row=1, column=17, value=data["VideoCreateTime"])
+            wb.worksheets[0].cell(row=1, column=18, value=data["VideoDescription"])
+            wb.worksheets[0].cell(row=1, column=19, value=data["VideoURL"])
+        wb.save(filename=self.get_abs_output_path())
+        self.log(log_type="SAVE", log_text=f"Save data success:{data}")
+        return cur_row + 1
+
+    def check_output_file(self, wb: Workbook) -> bool:
+        try:
+            wb.save(filename=self.get_abs_output_path())
+        except FileNotFoundError:
+            self.update_ui_signals.log_signal.emit("ERROR", "Output file not found. Please check folder exits:")
+            self.update_ui_signals.log_signal.emit("ERROR", self.output_path)
+            return False
+        return True
+
+    def get_abs_output_path(self) -> str:
+        if self.output_path.endswith('/'):
+            return self.output_path + self.file_name
+        else:
+            return self.output_path + '/' + self.file_name
