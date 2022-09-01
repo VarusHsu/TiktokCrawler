@@ -618,7 +618,7 @@ class UserByHashtag(QObject):
         pass
 
     def handle_verify_button_click(self):
-        hashtags= self.hashtag_edit_text.text()
+        hashtags = self.hashtag_edit_text.text()
         self.__set_task(hashtags)
         pass
 
@@ -661,6 +661,65 @@ class UserByHashtag(QObject):
             self.log("ANALYSIS", f"Result: {self.task_list}")
         pass
 
+    def request_get(self, url: str, allow_redirects: bool):
+        headers = {
+            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36"
+        }
+        try:
+            response = requests.get(url, allow_redirects=allow_redirects, headers=headers, timeout=60)
+        except MissingSchema:
+            self.update_ui_signals.log_signal.emit("ERROR", f"Invalid URL '{url}', perhaps you meant 'https://{url}'.")
+            return None
+        except SSLError:
+            self.update_ui_signals.log_signal.emit("ERROR", f"Max retries exceeded with URL '{url}'.")
+            self.update_ui_signals.log_signal.emit("TIPS", "Let me have a rest.")
+            self.update_ui_signals.log_signal.emit("TIPS", "Crawl will continue after 20s.")
+            time.sleep(20)
+            return None
+        except requests.exceptions.ConnectionError:
+            self.update_ui_signals.log_signal.emit("ERROR", "Internet error, maybe this error cause by VPN.")
+            time.sleep(20)
+            return None
+        else:
+            if response.status_code == 200 or response.status_code == 301:
+                self.update_ui_signals.log_signal.emit("GET", f"{response.status_code}: {url}.")
+                return response.content
+            elif response.status_code == 404:
+                return 404
+            else:
+                self.update_ui_signals.log_signal.emit("GET", f"{response.status_code}: {url}.")
+                return None
 
+    def proc_hashtag(self, hashtag: str):
+        self.log("PROGRESS", f"Begin crawl {hashtag}")
+        hashtag_info: dict = self.get_hashtag_info(hashtag=hashtag)
 
-
+    def get_hashtag_info(self, hashtag: str) -> dict:
+        url = "https://www.tiktok.com/api/challenge/detail/?aid=1988&app_language=zh-Hant-TW&app_name=tiktok_web&battery_info=1&browser_language=zh-CN&browser_name=Mozilla&browser_online=true&browser_platform=MacIntel&browser_version=5.0%20%28Macintosh%3B%20Intel%20Mac%20OS%20X%2010_15_7%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F104.0.0.0%20Safari%2F537.36&challengeName=" + hashtag
+        response_content = self.request_get(url=url, allow_redirects=False)
+        if response_content is None:
+            self.log("ERROR", f"Get {hashtag} hashtag info failed, this may cause by network.")
+            return {
+                "id": "-1",
+                "title": hashtag,
+                "videoCount": 0,
+                "viewCount": 0,
+            }
+        rsp = json.loads(response_content)
+        if rsp["statusCode"] == 10205:
+            self.log("ERROR", f"No such hashtag: {hashtag}")
+            return {
+                "id": "-2",
+                "title": hashtag,
+                "videoCount": 0,
+                "viewCount": 0,
+            }
+        hashtag_info = {
+            "id": rsp["challengeInfo"]["challenge"]["id"],
+            "title": rsp["challengeInfo"]["challenge"]["title"],
+            "videoCount": rsp["challengeInfo"]["challenge"]["stats"]["videoCount"],
+            "viewCount": rsp["challengeInfo"]["challenge"]["stats"]["viewCount"],
+        }
+        self.log("SUCCESS", f"Get hashtag {hashtag} info success")
+        self.log("SUCCESS", f"id: {hashtag_info['id']}, title: {hashtag_info['title']}, videoCount: {hashtag_info['videoCount']}, viewCount: {hashtag_info['viewCount']}")
+        return hashtag_info
