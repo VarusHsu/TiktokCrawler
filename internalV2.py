@@ -15,6 +15,33 @@ from PyQt6.QtGui import QIntValidator
 from requests.exceptions import MissingSchema, SSLError
 
 
+class Reporter:
+    container: dict
+    time_container: dict
+
+    def __init__(self):
+        self.container = {}
+        self.time_container = {}
+
+    def init_counter(self, name: str):
+        self.container[name] = 0
+
+    def self_increase(self, name: str):
+        self.container[name] += 1
+
+    def get_counter(self, name: str) -> int:
+        return self.container[name]
+
+    def set_counter(self, name: str, value: int):
+        self.container[name] = value
+
+    def set_timer(self, name: str = ""):
+        self.time_container[name] = int(time.time() * 1000)
+
+    def get_during(self, name: str = "")-> int:
+        return int(time.time() * 1000) - self.time_container[name]
+
+
 class ResultStatus:
     Success = "success"
     MayNetworkError = "mayNetworkError"
@@ -551,6 +578,9 @@ class VideoCrawler(QObject):
 
 
 class UserByHashtag(QObject):
+
+    reporter: Reporter
+
     window_width: int = 500
     window_height: int = 314
     button_width: int = 80
@@ -581,6 +611,7 @@ class UserByHashtag(QObject):
         self.update_ui_signals = UpdateUISignals()
         self.feishu = Feishu(update_ui_signals=self.update_ui_signals)
         self.update_ui_signals.log_signal.connect(self.handle_log_signal)
+        self.reporter = Reporter()
 
     def render(self):
         self.app = QApplication(sys.argv)
@@ -629,6 +660,9 @@ class UserByHashtag(QObject):
             return
 
         def run():
+            self.reporter.init_counter("VideoCounter")
+            self.reporter.init_counter("UserCounter")
+            self.reporter.set_timer()
             self.file_name = time.strftime("%Y-%m-%d_%H:%M:%S.xlsx", time.localtime())
             self.update_ui_signals.log_signal.emit("BEGIN", "Crawl start")
             wb = openpyxl.Workbook()
@@ -637,7 +671,16 @@ class UserByHashtag(QObject):
             self.write_head(wb=wb)
             for hashtag in self.task_list:
                 self.proc_hashtag(hashtag=hashtag, wb=wb)
+            video_count = self.reporter.get_counter("VideoCounter")
+            user_count = self.reporter.get_counter("UserCounter")
+            time_during = self.reporter.get_during()
+
+            time.sleep(5)
             self.update_ui_signals.log_signal.emit("COMPLETE", "Crawl complete.")
+            self.update_ui_signals.log_signal.emit("SUMMERY", f"Visit videos: {video_count}.")
+            self.update_ui_signals.log_signal.emit("SUMMERY", f"Get users: {user_count}.")
+            self.update_ui_signals.log_signal.emit("SUMMERY", f"Time cost: {time_during} ms.")
+
         crawl_thread: Thread = Thread(target=run)
         crawl_thread.start()
 
@@ -748,6 +791,7 @@ class UserByHashtag(QObject):
             if rsp_json["itemList"] is not None:
                 self.log("CRAWL", f"Get {len(rsp_json['itemList'])} videos to crawl.")
                 for video in rsp_json["itemList"]:
+                    self.reporter.self_increase("VideoCounter")
                     data = {
                         "Status": ResultStatus.Success,
                         "HashtagName": hashtag_info["title"],
@@ -836,6 +880,7 @@ class UserByHashtag(QObject):
             return
         wb.worksheets[0].cell(row=self.cur_line, column=1, value=data["Status"])
         if data["Status"] == ResultStatus.Success:
+            self.reporter.self_increase("UserCounter")
             self.user_home_page_list.append(data["UserHomePage"])
             wb.worksheets[0].cell(row=self.cur_line, column=2, value=data["HashtagName"])
             wb.worksheets[0].cell(row=self.cur_line, column=3, value=data["HashtagVideoCount"])

@@ -23,3 +23,7 @@
 ```shell
   make run_hashtag
 ```
+* 清除已经打的包以及打包缓存
+```shell
+make clear
+```
