@@ -2,8 +2,6 @@ import json
 import sys
 import time
 from threading import Thread
-from enum import Enum
-
 import requests
 from PyQt6.QtCore import QObject, pyqtSignal
 from PyQt6.QtWidgets import QApplication, QPushButton, QProgressBar, QListWidget, QWidget, QFileDialog, QLineEdit, QLabel
@@ -14,8 +12,6 @@ from openpyxl.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 import openpyxl
 from PyQt6.QtGui import QIntValidator
-import datetime
-
 from requests.exceptions import MissingSchema, SSLError
 
 
@@ -203,7 +199,7 @@ class VideoCrawler(QObject):
     button_height: int = 20
     edge_distance: int = 20
 
-    ms_token = "g8vXKy2fjhjd7xrrPcCU7Wfop7isL5KAuyjofBp061Mtaxm_fA5vZ_lAlj46mvE_NnR7x-m-022QnOLdb6Em6HbYv1qm-ek2LXKHh6aTtnLpk_Ke8h7MUTkvWAUZX0cQ1JhrowY="
+    ms_token = 'g8vXKy2fjhjd7xrrPcCU7Wfop7isL5KAuyjofBp061Mtaxm_fA5vZ_lAlj46mvE_NnR7x-m-022QnOLdb6Em6HbYv1qm-ek2LXKHh6aTtnLpk_Ke8h7MUTkvWAUZX0cQ1JhrowY='
 
     file: str = ""
     task: dict = {}
@@ -482,7 +478,8 @@ class VideoCrawler(QObject):
                 self.update_ui_signals.log_signal.emit("GET", f"{response.status_code}: {url}.")
                 return None
 
-    def get_tiktok_video_id(self, url: str) -> str:
+    @staticmethod
+    def get_tiktok_video_id(url: str) -> str:
         res_begin_index: int = url.rfind("/")
         res_end_index: int = url.find("?")
         res = url[res_begin_index + 1:res_end_index]
@@ -491,7 +488,8 @@ class VideoCrawler(QObject):
                 return ""
         return res
 
-    def get_tiktok_data_from_api(self, except_id: str, rsp_json: dict) -> dict:
+    @staticmethod
+    def get_tiktok_data_from_api(except_id: str, rsp_json: dict) -> dict:
         try:
             item_list = rsp_json["itemList"]
             for item in item_list:
