@@ -14,11 +14,12 @@ from openpyxl.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 import openpyxl
 from PyQt6.QtGui import QIntValidator
+import datetime
 
 from requests.exceptions import MissingSchema, SSLError
 
 
-class ResultStatus(Enum):
+class ResultStatus:
     Success = "success"
     MayNetworkError = "mayNetworkError"
 
@@ -561,6 +562,7 @@ class UserByHashtag(QObject):
     adjust_distance = 3
 
     task_list = []
+    cur_line: int = 2
 
     output_path = "/Users/rockey211224/Desktop"
     file_name = ""
@@ -613,6 +615,7 @@ class UserByHashtag(QObject):
 
         self.output_path_edit_text = QLineEdit(self.windows)
         self.output_path_edit_text.move(self.edit_line_x_distance, int(1.5 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance - self.adjust_distance)
+        self.output_path_edit_text.setText(self.output_path)
 
         self.hashtag_edit_text = QLineEdit(self.windows)
         self.hashtag_edit_text.move(self.edit_line_x_distance, int(3 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance - self.adjust_distance)
@@ -624,6 +627,7 @@ class UserByHashtag(QObject):
     def handle_crawl_button_click(self):
         if len(self.task_list) == 0:
             self.log("ERROR", "No task to run, input you hashtags and click '格式校验' button.")
+            return
 
         def run():
             self.file_name = time.strftime("%Y-%m-%d_%H:%M:%S.xlsx", time.localtime())
@@ -632,10 +636,11 @@ class UserByHashtag(QObject):
             if not self.check_output_file(wb):
                 return
             self.write_head(wb=wb)
-
+            for hashtag in self.task_list:
+                self.proc_hashtag(hashtag=hashtag, wb=wb)
             self.update_ui_signals.log_signal.emit("COMPLETE", "Crawl complete.")
-
-        pass
+        crawl_thread: Thread = Thread(target=run)
+        crawl_thread.start()
 
     def handle_verify_button_click(self):
         hashtags = self.hashtag_edit_text.text()
@@ -658,7 +663,7 @@ class UserByHashtag(QObject):
         log_str: str = f"[{log_type}] {log_text}"
 
         def run(message: str):
-            self.send_lark(message, log_type == "COMPLETE" and self.feishu.when_complete_at)
+            self.feishu.send_lark(message, log_type == "COMPLETE" and self.feishu.when_complete_at)
 
         send_thread: Thread = Thread(target=run, args=(log_str,))
         send_thread.start()
@@ -710,9 +715,56 @@ class UserByHashtag(QObject):
                 self.update_ui_signals.log_signal.emit("GET", f"{response.status_code}: {url}.")
                 return None
 
-    def proc_hashtag(self, hashtag: str):
+    @staticmethod
+    def timestamp_format(timestamp: int) -> str:
+        create_time = time.localtime(timestamp)
+        return str(time.strftime("%Y-%m-%d %H:%M:%S", create_time))
+
+    def proc_hashtag(self, hashtag: str, wb: Workbook):
         self.log("PROGRESS", f"Begin crawl {hashtag}")
         hashtag_info: dict = self.get_hashtag_info(hashtag=hashtag)
+        cursor = 0
+        has_more = True
+        while has_more:
+            url = f'https://www.tiktok.com/api/challenge/item_list/?aid=1988&app_language=zh-Hant-TW&app_name=tiktok_web&battery_info=1&browser_language=zh-CN&browser_name=Mozilla&browser_online=true&browser_platform=MacIntel&browser_version=5.0%20%28Macintosh%3B%20Intel%20Mac%20OS%20X%2010_15_7%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F104.0.0.0%20Safari%2F537.36&challengeID={hashtag_info["id"]}&channel=tiktok_web&cookie_enabled=true&count=30&cursor={cursor}&device_id=7135373539919021574&device_platform=web_pc&focus_state=true&from_page=hashtag&history_len=2&is_fullscreen=true&is_page_visible=true&language=zh-Hant-TW&os=mac&priority_region=&referer=https%3A%2F%2Fwww.google.com.hk%2F&region=TW&root_referer=https%3A%2F%2Fwww.google.com.hk%2F&screen_height=1920&screen_width=1080&tz_name=Asia%2FShanghai&webcast_language=zh-Hant-TW'
+            cursor = cursor + 30
+            rsp = self.request_get(url, allow_redirects=False)
+            if rsp is None:
+                continue
+            rsp_json = json.loads(rsp)
+            has_more = rsp_json["hasMore"]
+            self.log("CRAWL", f"Has next page:{has_more}")
+            if rsp_json.get("itemList") is None:
+                print(rsp_json)
+            if rsp_json["itemList"] is not None:
+                self.log("CRAWL", f"Get {len(rsp_json['itemList'])} videos to crawl.")
+                for video in rsp_json["itemList"]:
+                    data = {
+                        "Status": ResultStatus.Success,
+                        "HashtagName": hashtag_info["title"],
+                        "HashtagVideoCount": hashtag_info["videoCount"],
+                        "HashtagViewCount": hashtag_info["viewCount"],
+                        "UserNickname": video["author"]["nickname"],
+                        "UserSignature": video["author"]["signature"],
+                        "UserHomePage": f'https://www.tiktok.com/@{video["author"]["uniqueId"]}',
+                        "UserDiggCount": video["authorStats"]["diggCount"],
+                        "UserFollowerCount": video["authorStats"]["followerCount"],
+                        "UserHeartCount": video["authorStats"]["heartCount"],
+                        "UserVideoCount": video["authorStats"]["videoCount"],
+                        "VideoPage": f'https://www.tiktok.com/@{video["author"]["uniqueId"]}/video/{video["id"]}',
+                        "VideoDiggCount": video["stats"]["diggCount"],
+                        "VideoPlayCount": video["stats"]["playCount"],
+                        "VideoShareCount": video["stats"]["shareCount"],
+                        "VideoCommentCount": video["stats"]["commentCount"],
+                        "VideoCreateTime": self.timestamp_format(video["createTime"]),
+                        "VideoDescription": video["desc"],
+                        "VideoURL": video["video"].get("downloadAddr"),
+                    }
+                    if "@" in data.get("UserSignature"):
+                        self.log("CRAWL", "Found '@' in user signature.")
+                        self.write_line(wb=wb, data=data)
+                    else:
+                        self.log("CRAWL", "No found '@' in user signature.")
 
     def get_hashtag_info(self, hashtag: str) -> dict:
         url = "https://www.tiktok.com/api/challenge/detail/?aid=1988&app_language=zh-Hant-TW&app_name=tiktok_web&battery_info=1&browser_language=zh-CN&browser_name=Mozilla&browser_online=true&browser_platform=MacIntel&browser_version=5.0%20%28Macintosh%3B%20Intel%20Mac%20OS%20X%2010_15_7%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F104.0.0.0%20Safari%2F537.36&challengeName=" + hashtag
@@ -740,8 +792,8 @@ class UserByHashtag(QObject):
             "videoCount": rsp["challengeInfo"]["challenge"]["stats"]["videoCount"],
             "viewCount": rsp["challengeInfo"]["challenge"]["stats"]["viewCount"],
         }
-        self.log("SUCCESS", f"Get hashtag {hashtag} info success")
-        self.log("SUCCESS", f"id: {hashtag_info['id']}, title: {hashtag_info['title']}, videoCount: {hashtag_info['videoCount']}, viewCount: {hashtag_info['viewCount']}")
+        self.log("CRAWL", f"Get hashtag {hashtag} info success")
+        self.log("CRAWL", f"id: {hashtag_info['id']}, title: {hashtag_info['title']}, videoCount: {hashtag_info['videoCount']}, viewCount: {hashtag_info['viewCount']}")
         return hashtag_info
 
     def write_head(self, wb: Workbook):
@@ -768,30 +820,30 @@ class UserByHashtag(QObject):
         self.log(log_type="SAVE", log_text="Save header success")
         pass
 
-    def write_line(self, wb: Workbook, data: dict, cur_row: int) -> int:
-        wb.worksheets[0].cell(row=cur_row, column=1, value=data["Status"])
+    def write_line(self, wb: Workbook, data: dict):
+        wb.worksheets[0].cell(row=self.cur_line, column=1, value=data["Status"])
         if data["Status"] == ResultStatus.Success:
-            wb.worksheets[0].cell(row=1, column=2, value=data["HashtagName"])
-            wb.worksheets[0].cell(row=1, column=3, value=data["HashtagVideoCount"])
-            wb.worksheets[0].cell(row=1, column=4, value=data["HashtagViewCount"])
-            wb.worksheets[0].cell(row=1, column=5, value=data["UserNickname"])
-            wb.worksheets[0].cell(row=1, column=6, value=data["UserSignature"])
-            wb.worksheets[0].cell(row=1, column=7, value=data["UserHomePage"])
-            wb.worksheets[0].cell(row=1, column=8, value=data["UserDiggCount"])
-            wb.worksheets[0].cell(row=1, column=9, value=data["UserFollowerCount"])
-            wb.worksheets[0].cell(row=1, column=10, value=data["UserHeartCount"])
-            wb.worksheets[0].cell(row=1, column=11, value=data["UserVideoCount"])
-            wb.worksheets[0].cell(row=1, column=12, value=data["VideoPage"])
-            wb.worksheets[0].cell(row=1, column=13, value=data["VideoDiggCount"])
-            wb.worksheets[0].cell(row=1, column=14, value=data["VideoPlayCount"])
-            wb.worksheets[0].cell(row=1, column=15, value=data["VideoShareCount"])
-            wb.worksheets[0].cell(row=1, column=16, value=data["VideoCommentCount"])
-            wb.worksheets[0].cell(row=1, column=17, value=data["VideoCreateTime"])
-            wb.worksheets[0].cell(row=1, column=18, value=data["VideoDescription"])
-            wb.worksheets[0].cell(row=1, column=19, value=data["VideoURL"])
+            wb.worksheets[0].cell(row=self.cur_line, column=2, value=data["HashtagName"])
+            wb.worksheets[0].cell(row=self.cur_line, column=3, value=data["HashtagVideoCount"])
+            wb.worksheets[0].cell(row=self.cur_line, column=4, value=data["HashtagViewCount"])
+            wb.worksheets[0].cell(row=self.cur_line, column=5, value=data["UserNickname"])
+            wb.worksheets[0].cell(row=self.cur_line, column=6, value=data["UserSignature"])
+            wb.worksheets[0].cell(row=self.cur_line, column=7, value=data["UserHomePage"])
+            wb.worksheets[0].cell(row=self.cur_line, column=8, value=data["UserDiggCount"])
+            wb.worksheets[0].cell(row=self.cur_line, column=9, value=data["UserFollowerCount"])
+            wb.worksheets[0].cell(row=self.cur_line, column=10, value=data["UserHeartCount"])
+            wb.worksheets[0].cell(row=self.cur_line, column=11, value=data["UserVideoCount"])
+            wb.worksheets[0].cell(row=self.cur_line, column=12, value=data["VideoPage"])
+            wb.worksheets[0].cell(row=self.cur_line, column=13, value=data["VideoDiggCount"])
+            wb.worksheets[0].cell(row=self.cur_line, column=14, value=data["VideoPlayCount"])
+            wb.worksheets[0].cell(row=self.cur_line, column=15, value=data["VideoShareCount"])
+            wb.worksheets[0].cell(row=self.cur_line, column=16, value=data["VideoCommentCount"])
+            wb.worksheets[0].cell(row=self.cur_line, column=17, value=data["VideoCreateTime"])
+            wb.worksheets[0].cell(row=self.cur_line, column=18, value=data["VideoDescription"])
+            wb.worksheets[0].cell(row=self.cur_line, column=19, value=data["VideoURL"])
         wb.save(filename=self.get_abs_output_path())
         self.log(log_type="SAVE", log_text=f"Save data success:{data}")
-        return cur_row + 1
+        self.cur_line = self.cur_line + 1
 
     def check_output_file(self, wb: Workbook) -> bool:
         try:
