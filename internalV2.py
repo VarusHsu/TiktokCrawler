@@ -546,19 +546,22 @@ class VideoCrawler(QObject):
 
 
 class UserByHashtag(QObject):
-
     window_width: int = 500
     window_height: int = 314
     button_width: int = 80
     button_height: int = 20
     edge_distance: int = 20
+    edit_line_x_distance = 80
+    adjust_distance = 3
 
     app: QApplication
     windows: QWidget
     crawl_button: QPushButton
     log_box: QListWidget
     output_path_edit_text: QLineEdit
+    hashtag_edit_text: QLineEdit
     output_path_label: QLabel
+    hashtag_label: QLabel
 
     def __init__(self):
         super().__init__()
@@ -575,13 +578,27 @@ class UserByHashtag(QObject):
 
         self.log_box = QListWidget(self.windows)
         self.log_box.move(self.edge_distance, self.edge_distance)
-        self.log_box.resize(self.window_width - 2 * self.edge_distance, self.window_height - self.button_height - 3 * self.edge_distance)
+        self.log_box.resize(self.window_width - 2 * self.edge_distance, self.window_height - self.button_height - 4 * self.edge_distance)
         self.log_box.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         self.crawl_button = QPushButton(self.windows)
         self.crawl_button.setText("开始爬取")
-        self.crawl_button.move(int(self.window_width / 4 * 1 - self.button_width / 2), int(self.window_height - self.edge_distance - self.button_height))
+        self.crawl_button.move(int(self.window_width / 8 * 7 - self.button_width / 2), int(self.window_height - self.edge_distance - self.button_height))
         self.crawl_button.clicked.connect(self.handle_crawl_button_click)
+
+        self.output_path_label = QLabel(self.windows)
+        self.output_path_label.setText("输出路径:")
+        self.output_path_label.move(self.edge_distance, int(1.5 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance)
+
+        self.hashtag_label = QLabel(self.windows)
+        self.hashtag_label.setText("Hashtag :")
+        self.hashtag_label.move(self.edge_distance, int(3 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance)
+
+        self.output_path_edit_text = QLineEdit(self.windows)
+        self.output_path_edit_text.move(self.edit_line_x_distance,  int(1.5 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance - self.adjust_distance)
+
+        self.hashtag_edit_text = QLineEdit(self.windows)
+        self.hashtag_edit_text.move(self.edit_line_x_distance,  int(3 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance - self.adjust_distance)
 
         self.windows.show()
         sys.exit(self.app.exec())
