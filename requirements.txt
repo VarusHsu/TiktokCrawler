@@ -1,6 +1,117 @@
-pyqt6~=6.3.1
-setuptools~=61.2.0
-openpyxl~=3.0.9
-requests~=2.27.1
-bs4~=0.0.1
-beautifulsoup4~=4.11.1
+altgraph @ file:///home/conda/feedstock_root/build_artifacts/altgraph_1651001670556/work
+appdirs==1.4.4
+argon2-cffi @ file:///home/conda/feedstock_root/build_artifacts/argon2-cffi_1640817743617/work
+argon2-cffi-bindings @ file:///Users/runner/miniforge3/conda-bld/argon2-cffi-bindings_1649500375223/work
+asgiref @ file:///tmp/build/80754af9/asgiref_1625643473416/work
+async-generator==1.10
+attrs @ file:///home/conda/feedstock_root/build_artifacts/attrs_1640799537051/work
+audioread==2.1.9
+Automat==20.2.0
+bcrypt @ file:///Users/runner/miniforge3/conda-bld/bcrypt_1649165250430/work
+beautifulsoup4==4.11.1
+blinker==1.4
+brotlipy==0.7.0
+bs4==0.0.1
+certifi==2022.5.18.1
+cffi @ file:///Users/builder/ci_310/cffi_1643393868399/work
+charset-normalizer==2.0.12
+cityhash==0.4.1
+click @ file:///Users/runner/miniforge3/conda-bld/click_1648793533294/work
+cloudscraper==1.2.60
+colour==0.1.5
+constantly==15.1.0
+cryptography @ file:///Users/builder/ci_310/cryptography_1642543758909/work
+cssselect==1.1.0
+dataclasses @ file:///home/conda/feedstock_root/build_artifacts/dataclasses_1628958434797/work
+decorator @ file:///opt/conda/conda-bld/decorator_1643638310831/work
+et-xmlfile==1.0.1
+fake-useragent==0.1.11
+ffmpeg==1.4
+ffprobe==0.5
+filelock @ file:///home/conda/feedstock_root/build_artifacts/filelock_1645136850180/work
+Flask==2.1.1
+flit_core @ file:///home/conda/feedstock_root/build_artifacts/flit-core_1645629044586/work/source/flit_core
+h11==0.13.0
+h2 @ file:///home/conda/feedstock_root/build_artifacts/h2_1634280454336/work
+hpack==4.0.0
+hyperframe @ file:///home/conda/feedstock_root/build_artifacts/hyperframe_1619110129307/work
+hyperlink @ file:///home/conda/feedstock_root/build_artifacts/hyperlink_1610092164190/work
+idna @ file:///tmp/build/80754af9/idna_1637925883363/work
+importlib-metadata @ file:///opt/concourse/worker/volumes/live/a8740f82-0523-4b08-5bb5-afa0c929f5e0/volume/importlib-metadata_1648562424930/work
+incremental @ file:///home/conda/feedstock_root/build_artifacts/incremental_1621907170877/work
+itemadapter @ file:///home/conda/feedstock_root/build_artifacts/itemadapter_1630045170822/work
+itemloaders @ file:///home/conda/feedstock_root/build_artifacts/itemloaders_1605273565796/work
+itsdangerous @ file:///home/conda/feedstock_root/build_artifacts/itsdangerous_1645182785493/work
+Jinja2 @ file:///home/conda/feedstock_root/build_artifacts/jinja2_1636510082894/work
+jmespath @ file:///home/conda/feedstock_root/build_artifacts/jmespath_1589369830981/work
+joblib @ file:///tmp/build/80754af9/joblib_1635411271373/work
+ldap3 @ file:///home/conda/feedstock_root/build_artifacts/ldap3_1630487888272/work
+librosa==0.9.1
+llvmlite==0.38.0
+lxml @ file:///Users/runner/miniforge3/conda-bld/lxml_1649697887405/work
+macholib @ file:///home/conda/feedstock_root/build_artifacts/macholib_1651023366976/work
+MarkupSafe @ file:///Users/runner/miniforge3/conda-bld/markupsafe_1646594660270/work
+mkl-fft==1.3.1
+mkl-random @ file:///opt/concourse/worker/volumes/live/a9eca864-069c-4240-73c8-4e51b036a10d/volume/mkl_random_1639994047876/work
+mkl-service==2.4.0
+modulegraph==0.19.2
+numba @ file:///private/var/folders/sy/f16zz6x50xz3113nwtb9bvq00000gp/T/abs_croot-p56zvl1f/numba_1648040520212/work
+numpy==1.21.6
+opencv-python==4.5.5.64
+openpyxl @ file:///home/conda/feedstock_root/build_artifacts/openpyxl_1632332968451/work
+outcome==1.1.0
+packaging @ file:///tmp/build/80754af9/packaging_1637314298585/work
+parsel @ file:///home/conda/feedstock_root/build_artifacts/parsel_1591122878042/work
+passlib==1.7.4
+Pillow==9.1.0
+pooch==1.6.0
+Protego @ file:///home/conda/feedstock_root/build_artifacts/protego_1647348122707/work
+protobuf==3.19.4
+py2app==0.28.2
+pyasn1==0.4.8
+pyasn1-modules==0.2.8
+pycparser @ file:///tmp/build/80754af9/pycparser_1636541352034/work
+PyDispatcher==2.0.5
+pydub @ file:///home/conda/feedstock_root/build_artifacts/pydub_1615612442567/work
+pyinstaller @ file:///Users/runner/miniforge3/conda-bld/pyinstaller_1645116440260/work
+pyinstaller-hooks-contrib @ file:///home/conda/feedstock_root/build_artifacts/pyinstaller-hooks-contrib_1645103010308/work
+PyMySQL==1.0.2
+pyOpenSSL @ file:///opt/conda/conda-bld/pyopenssl_1643788558760/work
+pyparsing==3.0.8
+pyperclip @ file:///home/conda/feedstock_root/build_artifacts/pyperclip_1622337600177/work
+PyQt5-Qt5==5.15.2
+PyQt5-sip==12.11.0
+PyQt6==6.3.1
+PyQt6-Qt6==6.3.1
+PyQt6-sip==13.4.0
+PySocks @ file:///Users/builder/ci_310/pysocks_1642536366386/work
+queuelib @ file:///home/conda/feedstock_root/build_artifacts/queuelib_1629994290383/work
+requests @ file:///opt/conda/conda-bld/requests_1641824580448/work
+requests-file @ file:///home/conda/feedstock_root/build_artifacts/requests-file_1591227832914/work
+requests-toolbelt==0.9.1
+resampy==0.2.2
+ruamel.yaml.clib @ file:///Users/runner/miniforge3/conda-bld/ruamel.yaml.clib_1649013113902/work
+scikit-learn @ file:///Users/builder/ci_310/scikit-learn_1642608976196/work
+scipy==1.8.0
+selenium==4.1.3
+six @ file:///tmp/build/80754af9/six_1644875935023/work
+sniffio==1.2.0
+sortedcontainers==2.4.0
+SoundFile==0.10.3.post1
+soupsieve==2.3.2.post1
+threadpoolctl==3.1.0
+tkmacosx==1.0.5
+tldextract @ file:///opt/conda/conda-bld/tldextract_1646638314385/work
+tornado @ file:///Users/runner/miniforge3/conda-bld/tornado_1648827310178/work
+trio==0.20.0
+trio-websocket==0.9.2
+typing_extensions @ file:///opt/conda/conda-bld/typing_extensions_1647553014482/work
+urllib3==1.26.9
+urwid @ file:///Users/runner/miniforge3/conda-bld/urwid_1649445750279/work
+w3lib @ file:///home/conda/feedstock_root/build_artifacts/w3lib_1591173357158/work
+Werkzeug @ file:///opt/conda/conda-bld/werkzeug_1645628268370/work
+wsproto==1.1.0
+xlrd @ file:///home/conda/feedstock_root/build_artifacts/xlrd_1610224409810/work
+zipp @ file:///home/conda/feedstock_root/build_artifacts/zipp_1649012893348/work
+zope.interface @ file:///Users/runner/miniforge3/conda-bld/zope.interface_1649175752968/work
+zstandard @ file:///Users/builder/ci_310/zstandard_1642539399178/work

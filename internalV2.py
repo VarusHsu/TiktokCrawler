@@ -1,6 +1,5 @@
 import json
 import sys
-import threading
 import time
 from threading import Thread
 
@@ -90,8 +89,6 @@ class ConfigWindow(QWidget):
         self.output_path_label.setText("输出路径")
         self.output_path_label.move(self.config_window_edge_distance, self.config_window_edge_distance + self.config_window_edge_distance + self.line_edit_height)
 
-
-
     def handle_save_button_click(self):
         try:
             self.begin_line = int(self.begin_line_edit_text.text())
@@ -143,10 +140,13 @@ class VideoCrawler(QObject):
     update_ui_signals: UpdateUISignals
     adjust_config_signals: AdjustConfigSignals
 
+    feishu: Feishu
+
     def __init__(self):
         super().__init__()
         self.update_ui_signals = UpdateUISignals()
         self.adjust_config_signals = AdjustConfigSignals()
+        self.feishu = Feishu(update_ui_signals=self.update_ui_signals)
         self.update_ui_signals.progress_bar_update_signal.connect(self.handle_update_progress_bar_signal)
         self.update_ui_signals.log_signal.connect(self.handle_log_signal)
         self.adjust_config_signals.adjust_begin_line_signal.connect(self.handle_adjust_begin_line)
@@ -267,7 +267,7 @@ class VideoCrawler(QObject):
         log_str: str = f"[{log_type}] {log_text}"
 
         def run(message: str):
-            self.send_lark(message)
+            self.send_lark(message, log_type == "COMPLETE" and self.feishu.when_complete_at)
 
         send_thread: Thread = Thread(target=run, args=(log_str,))
         send_thread.start()
@@ -291,7 +291,7 @@ class VideoCrawler(QObject):
         log_str: str = f"[{log_type}] {log_text}"
 
         def run(message: str):
-            self.send_lark(message)
+            self.feishu.send_lark(message)
 
         send_thread: Thread = Thread(target=run, args=(log_str,))
         send_thread.start()
@@ -329,7 +329,7 @@ class VideoCrawler(QObject):
         wb.worksheets[0].cell(row=row, column=1, value=url)
         wb.worksheets[0].cell(row=row, column=2, value=video_id)
         wb.worksheets[0].cell(row=row, column=3, value=status_dict[status])
-        if status not in [-1,0,-2, -3]:
+        if status not in [-1, 0, -2, -3]:
             wb.worksheets[0].cell(row=row, column=4, value=like)
             wb.worksheets[0].cell(row=row, column=5, value=comment)
             wb.worksheets[0].cell(row=row, column=6, value=share)
@@ -475,11 +475,76 @@ class VideoCrawler(QObject):
             return False
         return True
 
-    @staticmethod
-    def send_lark(text: str):
-        obj = {"msg_type": "text", "content": {"text": text}}
-        url = 'https://open.feishu.cn/open-apis/bot/v2/hook/8260d294-6983-419d-b071-fc462d36ea70'
+
+class Feishu(QObject):
+    tenant_access_token: str = ''
+    robot_secret_data = '{"app_id": "cli_a24d49eae1bad013","app_secret": "6een1lFRrlxMaFJxTIRfUetTqHRklgiZ"}'
+    robot_url = 'https://open.feishu.cn/open-apis/bot/v2/hook/8260d294-6983-419d-b071-fc462d36ea70'
+
+    update_ui_signals: UpdateUISignals
+
+    at_user_open_id = ''
+    when_complete_at: bool = False
+
+    headers = {
+        "Content-Type": "application/json; charset=utf-8"
+    }
+
+    def __init__(self, update_ui_signals: UpdateUISignals):
+        super().__init__()
+        self.update_ui_signals = update_ui_signals
+
+    def __get_tenant_access_token(self) -> str:
+        if self.tenant_access_token != '':
+            url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
+            response = requests.post(url=url, data=self.robot_secret_data, headers=headers)
+            response_json = json.loads(response.content)
+            if response_json['code'] != 0:
+                self.update_ui_signals.log_signal.emit("FEISHU", "Get feishu access token error.")
+                raise Exception(f"[{response_json['code']}]Get feishu tenant access token failed!\n{response_json['msg']}")
+            self.tenant_access_token = response_json["tenant_access_token"]
+            self.update_ui_signals.log_signal.emit("FEISHU", "Get feishu access token success.")
+        return self.tenant_access_token
+
+    def send_lark(self, text: str, at: bool = False):
+        for i in rang(0, 3):
+            if not at or self.at_user_open_id == "":
+                if self.__send_lark(text=text, at=""):
+                    break
+            else:
+                if self.__send_lark(text=text, at=self.at_user_open_id):
+                    break
+
+    def __send_lark(self, text: str, at: str = "") -> bool:
+        if at != "":
+            obj = {"msg_type": "text", "content": " {\"text\":\"<at user_id=\\\"" + at + "\\\"></at> " + text + "\"}"}
+        else:
+            obj = {"msg_type": "text", "content": {"text": text}}
         try:
-            requests.post(url, json=obj, timeout=60)
+            requests.post(self.robot_url, json=obj, timeout=60)
         except Exception as e:
             print(e)
+            return False
+        return True
+
+    def get_user_open_id_by_email(self, email: str) -> str:
+        headers = {
+            "Content-Type": "application/json; charset=utf-8",
+            "Authorization": "Bearer " + self.__get_tenant_access_token()
+        }
+        url = "https://open.feishu.cn/open-apis/contact/v3/users/batch_get_id"
+        data = '{"emails": ["' + email + '"]}'
+        response = requests.post(url=url, data=data, headers=headers)
+        rsp = json.loads(response.content)
+        if rsp["data"]["user_list"][0]["user_id"] is None:
+            self.update_ui_signals.log_signal.emit("FEISHU", f"Set when complete at {email} failed, please check email spell.")
+            self.at_user_open_id = ""
+            return ""
+        self.update_ui_signals.log_signal.emit("FEISHU", f"Set when complete at {email} success")
+        self.at_user_open_id = rsp["data"]["user_list"][0]["user_id"]
+        return self.at_user_open_id
+
+
+class UserByHashtag(QObject):
+    def render(self):
+        pass
