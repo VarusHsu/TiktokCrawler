@@ -9,19 +9,17 @@
 ```
 * 播放量爬虫打包命令
 ```shell
-  py2applet --make-setup play_count_info.py
-  python3 setup.py py2app 
+  make play_count
 ```
 * hashtag爬虫打包命令
 ```shell
-  py2applet --make-setup user_by_hashtag.py
-  python3 setup.py py2app 
+  make hashtag
 ```
 * 播放量爬虫运行命令
 ```shell
-  python3 play_count_info.py
+  make run_play_count
 ```
 * hashtag爬虫运行命令
 ```shell
-  python3 user_by_hashtag.py
+  make run_hashtag
 ```
