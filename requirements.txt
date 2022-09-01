@@ -56,7 +56,7 @@ mkl-random @ file:///opt/concourse/worker/volumes/live/a9eca864-069c-4240-73c8-4
 mkl-service==2.4.0
 modulegraph==0.19.2
 numba @ file:///private/var/folders/sy/f16zz6x50xz3113nwtb9bvq00000gp/T/abs_croot-p56zvl1f/numba_1648040520212/work
-numpy==1.21.6
+numpy~=1.21.5
 opencv-python==4.5.5.64
 openpyxl @ file:///home/conda/feedstock_root/build_artifacts/openpyxl_1632332968451/work
 outcome==1.1.0
@@ -115,3 +115,9 @@ xlrd @ file:///home/conda/feedstock_root/build_artifacts/xlrd_1610224409810/work
 zipp @ file:///home/conda/feedstock_root/build_artifacts/zipp_1649012893348/work
 zope.interface @ file:///Users/runner/miniforge3/conda-bld/zope.interface_1649175752968/work
 zstandard @ file:///Users/builder/ci_310/zstandard_1642539399178/work
+
+cffi~=1.15.0
+numba~=0.55.1
+setuptools~=61.2.0
+requests~=2.27.1
+openpyxl~=3.0.9
