@@ -58,7 +58,7 @@ class Feishu(QObject):
         return self.tenant_access_token
 
     def send_lark(self, text: str, at: bool = False):
-        for i in rang(0, 3):
+        for i in range(0, 3):
             if not at or self.at_user_open_id == "":
                 if self.__send_lark(text=text, at=""):
                     break
@@ -554,9 +554,12 @@ class UserByHashtag(QObject):
     edit_line_x_distance = 80
     adjust_distance = 3
 
+    task_list = []
+
     app: QApplication
     windows: QWidget
     crawl_button: QPushButton
+    verify_button: QPushButton
     log_box: QListWidget
     output_path_edit_text: QLineEdit
     hashtag_edit_text: QLineEdit
@@ -583,8 +586,13 @@ class UserByHashtag(QObject):
 
         self.crawl_button = QPushButton(self.windows)
         self.crawl_button.setText("开始爬取")
-        self.crawl_button.move(int(self.window_width / 8 * 7 - self.button_width / 2), int(self.window_height - self.edge_distance - self.button_height))
+        self.crawl_button.move(int(self.window_width / 8 * 7 - self.button_width / 2), int(3 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance - self.adjust_distance)
         self.crawl_button.clicked.connect(self.handle_crawl_button_click)
+
+        self.verify_button = QPushButton(self.windows)
+        self.verify_button.setText("格式校验")
+        self.verify_button.move(int(self.window_width / 8 * 7 - self.button_width / 2), int(1.5 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance - self.adjust_distance)
+        self.verify_button.clicked.connect(self.handle_verify_button_click)
 
         self.output_path_label = QLabel(self.windows)
         self.output_path_label.setText("输出路径:")
@@ -595,17 +603,64 @@ class UserByHashtag(QObject):
         self.hashtag_label.move(self.edge_distance, int(3 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance)
 
         self.output_path_edit_text = QLineEdit(self.windows)
-        self.output_path_edit_text.move(self.edit_line_x_distance,  int(1.5 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance - self.adjust_distance)
+        self.output_path_edit_text.move(self.edit_line_x_distance, int(1.5 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance - self.adjust_distance)
 
         self.hashtag_edit_text = QLineEdit(self.windows)
-        self.hashtag_edit_text.move(self.edit_line_x_distance,  int(3 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance - self.adjust_distance)
+        self.hashtag_edit_text.move(self.edit_line_x_distance, int(3 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance - self.adjust_distance)
 
         self.windows.show()
         sys.exit(self.app.exec())
         pass
 
-    def handle_log_signal(self):
+    def handle_crawl_button_click(self):
+        if len(self.task_list) == 0:
+            self.log("ERROR", "No task to run, input you hashtags and click '格式校验' button.")
         pass
 
-    def handle_crawl_button_click(self):
+    def handle_verify_button_click(self):
+        hashtags= self.hashtag_edit_text.text()
+        self.__set_task(hashtags)
         pass
+
+    def log(self, log_type, log_text):
+        log_str: str = f"[{log_type}] {log_text}"
+
+        def run(message: str):
+            self.feishu.send_lark(message)
+
+        send_thread: Thread = Thread(target=run, args=(log_str,))
+        send_thread.start()
+        self.log_box.addItem(log_str)
+        self.log_box.verticalScrollBar().setValue(self.log_box.verticalScrollBar().maximum())
+        pass
+
+    def handle_log_signal(self, log_type, log_text):
+        log_str: str = f"[{log_type}] {log_text}"
+
+        def run(message: str):
+            self.send_lark(message, log_type == "COMPLETE" and self.feishu.when_complete_at)
+
+        send_thread: Thread = Thread(target=run, args=(log_str,))
+        send_thread.start()
+        self.log_box.addItem(log_str)
+        self.log_box.verticalScrollBar().setValue(self.log_box.verticalScrollBar().maximum())
+        pass
+
+    def __set_task(self, hashtags: str):
+        if len(hashtags) == 0:
+            self.log("ERROR", "You should input something to hashtag.")
+        hashtags = hashtags.replace(" ", "")
+        hashtags = hashtags.replace("\n", "")
+        self.task_list = hashtags.split("#")
+        if "" in self.task_list:
+            self.task_list.remove("")
+        if len(self.task_list) == 0:
+            self.log("ERROR", "There is no valid task to run, check your input.")
+        else:
+            self.log("ANALYSIS", "Analysis your input success.")
+            self.log("ANALYSIS", f"Result: {self.task_list}")
+        pass
+
+
+
+
