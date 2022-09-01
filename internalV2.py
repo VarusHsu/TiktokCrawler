@@ -563,6 +563,7 @@ class UserByHashtag(QObject):
 
     task_list = []
     cur_line: int = 2
+    user_home_page_list = []
 
     output_path = "/Users/rockey211224/Desktop"
     file_name = ""
@@ -655,6 +656,7 @@ class UserByHashtag(QObject):
 
         send_thread: Thread = Thread(target=run, args=(log_str,))
         send_thread.start()
+        log_str = self.__remove_illegal_byte(log_str)
         self.log_box.addItem(log_str)
         self.log_box.verticalScrollBar().setValue(self.log_box.verticalScrollBar().maximum())
         pass
@@ -667,9 +669,18 @@ class UserByHashtag(QObject):
 
         send_thread: Thread = Thread(target=run, args=(log_str,))
         send_thread.start()
+        log_str = self.__remove_illegal_byte(log_str)
         self.log_box.addItem(log_str)
         self.log_box.verticalScrollBar().setValue(self.log_box.verticalScrollBar().maximum())
         pass
+
+    @staticmethod
+    def __remove_illegal_byte(text: str) -> str:
+        res: str = ""
+        for byte in text:
+            if byte.isascii():
+                res = res + byte
+        return res
 
     def __set_task(self, hashtags: str):
         if len(hashtags) == 0:
@@ -761,10 +772,11 @@ class UserByHashtag(QObject):
                         "VideoURL": video["video"].get("downloadAddr"),
                     }
                     if "@" in data.get("UserSignature"):
-                        self.log("CRAWL", "Found '@' in user signature.")
+                        # self.log("CRAWL", "Found '@' in user signature.")
                         self.write_line(wb=wb, data=data)
                     else:
-                        self.log("CRAWL", "No found '@' in user signature.")
+                        pass
+                        # self.log("CRAWL", "No found '@' in user signature.")
 
     def get_hashtag_info(self, hashtag: str) -> dict:
         url = "https://www.tiktok.com/api/challenge/detail/?aid=1988&app_language=zh-Hant-TW&app_name=tiktok_web&battery_info=1&browser_language=zh-CN&browser_name=Mozilla&browser_online=true&browser_platform=MacIntel&browser_version=5.0%20%28Macintosh%3B%20Intel%20Mac%20OS%20X%2010_15_7%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F104.0.0.0%20Safari%2F537.36&challengeName=" + hashtag
@@ -821,8 +833,12 @@ class UserByHashtag(QObject):
         pass
 
     def write_line(self, wb: Workbook, data: dict):
+        if data["Status"] == ResultStatus.Success and data["UserHomePage"] in self.user_home_page_list:
+            self.log("CRAWL", f"Duplication user of {data['UserHomePage']}")
+            return
         wb.worksheets[0].cell(row=self.cur_line, column=1, value=data["Status"])
         if data["Status"] == ResultStatus.Success:
+            self.user_home_page_list.append(data["UserHomePage"])
             wb.worksheets[0].cell(row=self.cur_line, column=2, value=data["HashtagName"])
             wb.worksheets[0].cell(row=self.cur_line, column=3, value=data["HashtagVideoCount"])
             wb.worksheets[0].cell(row=self.cur_line, column=4, value=data["HashtagViewCount"])
