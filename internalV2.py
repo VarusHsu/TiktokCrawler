@@ -821,7 +821,7 @@ class UserByHashtag(QObject):
             has_more = rsp_json["hasMore"]
             self.log("CRAWL", f"Has next page:{has_more}")
             if rsp_json.get("itemList") is None:
-                print(rsp_json)
+                return
             if rsp_json["itemList"] is not None:
                 self.log("CRAWL", f"Get {len(rsp_json['itemList'])} videos to crawl.")
                 for video in rsp_json["itemList"]:
