@@ -4,7 +4,7 @@ import time
 from threading import Thread
 import requests
 from PyQt6.QtCore import QObject, pyqtSignal
-from PyQt6.QtWidgets import QApplication, QPushButton, QProgressBar, QListWidget, QWidget, QFileDialog, QLineEdit, QLabel
+from PyQt6.QtWidgets import QApplication, QPushButton, QProgressBar, QListWidget, QWidget, QFileDialog, QLineEdit, QLabel, QRadioButton
 from PyQt6 import QtCore
 from bs4 import BeautifulSoup
 from openpyxl.utils.exceptions import InvalidFileException
@@ -38,7 +38,7 @@ class Reporter:
     def set_timer(self, name: str = ""):
         self.time_container[name] = int(time.time() * 1000)
 
-    def get_during(self, name: str = "")-> int:
+    def get_during(self, name: str = "") -> int:
         return int(time.time() * 1000) - self.time_container[name]
 
 
@@ -76,9 +76,9 @@ class Feishu(QObject):
         self.update_ui_signals = update_ui_signals
 
     def __get_tenant_access_token(self) -> str:
-        if self.tenant_access_token != '':
+        if self.tenant_access_token == '':
             url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
-            response = requests.post(url=url, data=self.robot_secret_data, headers=headers)
+            response = requests.post(url=url, data=self.robot_secret_data, headers=self.headers)
             response_json = json.loads(response.content)
             if response_json['code'] != 0:
                 self.update_ui_signals.log_signal.emit("FEISHU", "Get feishu access token error.")
@@ -113,11 +113,13 @@ class Feishu(QObject):
             "Content-Type": "application/json; charset=utf-8",
             "Authorization": "Bearer " + self.__get_tenant_access_token()
         }
+        print(headers)
         url = "https://open.feishu.cn/open-apis/contact/v3/users/batch_get_id"
         data = '{"emails": ["' + email + '"]}'
         response = requests.post(url=url, data=data, headers=headers)
         rsp = json.loads(response.content)
-        if rsp["data"]["user_list"][0]["user_id"] is None:
+        print(rsp)
+        if rsp["data"]["user_list"][0].get("user_id") is None:
             self.update_ui_signals.log_signal.emit("FEISHU", f"Set when complete at {email} failed, please check email spell.")
             self.at_user_open_id = ""
             return ""
@@ -578,7 +580,6 @@ class VideoCrawler(QObject):
 
 
 class UserByHashtag(QObject):
-
     reporter: Reporter
 
     window_width: int = 500
@@ -588,10 +589,14 @@ class UserByHashtag(QObject):
     edge_distance: int = 20
     edit_line_x_distance = 80
     adjust_distance = 3
+    notice_x_distance: int = 270
+    notice_tip_distance = 210
+    notice_me_button_x: int = 295
 
     task_list = []
     cur_line: int = 2
     user_home_page_list = []
+    is_notice = False
 
     output_path = "/Users/rockey211224/Desktop"
     file_name = ""
@@ -605,6 +610,10 @@ class UserByHashtag(QObject):
     hashtag_edit_text: QLineEdit
     output_path_label: QLabel
     hashtag_label: QLabel
+    notice_me_radio_button: QRadioButton
+    notice_email_edit_text: QLineEdit
+    notice_email_label: QLabel
+    notice_me_label: QLabel
 
     def __init__(self):
         super().__init__()
@@ -627,12 +636,12 @@ class UserByHashtag(QObject):
 
         self.crawl_button = QPushButton(self.windows)
         self.crawl_button.setText("开始爬取")
-        self.crawl_button.move(int(self.window_width / 8 * 7 - self.button_width / 2), int(3 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance - self.adjust_distance)
+        self.crawl_button.move(int(self.window_width / 8 * 7 - self.button_width / 2), int(3 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance - 2*self.adjust_distance -1)
         self.crawl_button.clicked.connect(self.handle_crawl_button_click)
 
         self.verify_button = QPushButton(self.windows)
         self.verify_button.setText("格式校验")
-        self.verify_button.move(int(self.window_width / 8 * 7 - self.button_width / 2), int(1.5 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance - self.adjust_distance)
+        self.verify_button.move(int(self.window_width / 8 * 7 - self.button_width / 2), int(1.5 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance - 2*self.adjust_distance-1)
         self.verify_button.clicked.connect(self.handle_verify_button_click)
 
         self.output_path_label = QLabel(self.windows)
@@ -650,6 +659,22 @@ class UserByHashtag(QObject):
         self.hashtag_edit_text = QLineEdit(self.windows)
         self.hashtag_edit_text.move(self.edit_line_x_distance, int(3 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance - self.adjust_distance)
 
+        self.notice_me_radio_button = QRadioButton(self.windows)
+        self.notice_me_radio_button.move(self.notice_me_button_x, int(1.5 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance - 1)
+        self.notice_me_radio_button.clicked.connect(self.handle_notice_me_radio_button_click)
+
+        self.notice_me_label = QLabel(self.windows)
+        self.notice_me_label.setText("完成时提醒我:")
+        self.notice_me_label.move(self.notice_tip_distance, int(1.5 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance)
+
+        self.notice_email_edit_text = QLineEdit(self.windows)
+        self.notice_email_edit_text.move(self.notice_x_distance, int(3 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance- self.adjust_distance)
+        self.notice_email_edit_text.setEnabled(False)
+
+        self.notice_email_label = QLabel(self.windows)
+        self.notice_email_label.setText("提醒邮箱:")
+        self.notice_email_label.move(self.notice_tip_distance, int(3 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance)
+
         self.windows.show()
         sys.exit(self.app.exec())
         pass
@@ -663,6 +688,7 @@ class UserByHashtag(QObject):
             self.reporter.init_counter("VideoCounter")
             self.reporter.init_counter("UserCounter")
             self.reporter.set_timer()
+            self.feishu.get_user_open_id_by_email(self.notice_email_edit_text.text())
             self.file_name = time.strftime("%Y-%m-%d_%H:%M:%S.xlsx", time.localtime())
             self.update_ui_signals.log_signal.emit("BEGIN", "Crawl start")
             wb = openpyxl.Workbook()
@@ -713,6 +739,12 @@ class UserByHashtag(QObject):
         log_str = self.__remove_illegal_byte(log_str)
         self.log_box.addItem(log_str)
         self.log_box.verticalScrollBar().setValue(self.log_box.verticalScrollBar().maximum())
+        pass
+
+    def handle_notice_me_radio_button_click(self):
+        self.is_notice = self.notice_me_radio_button.isChecked()
+        self.notice_email_edit_text.setEnabled(self.is_notice)
+        self.feishu.when_complete_at = self.notice_me_radio_button.isChecked()
         pass
 
     @staticmethod
@@ -775,6 +807,8 @@ class UserByHashtag(QObject):
     def proc_hashtag(self, hashtag: str, wb: Workbook):
         self.log("PROGRESS", f"Begin crawl {hashtag}")
         hashtag_info: dict = self.get_hashtag_info(hashtag=hashtag)
+        if hashtag_info["id"] in ["-1", "-2"]:
+            return
         cursor = 0
         has_more = True
         while has_more:
