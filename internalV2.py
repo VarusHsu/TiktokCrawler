@@ -824,6 +824,8 @@ class UserByHashtag(QObject):
                 return
             if rsp_json["itemList"] is not None:
                 self.log("CRAWL", f"Get {len(rsp_json['itemList'])} videos to crawl.")
+                if len(rsp_json['itemList']) != 30:
+                    return
                 for video in rsp_json["itemList"]:
                     self.reporter.self_increase("VideoCounter")
                     data = {
