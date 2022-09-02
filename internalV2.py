@@ -761,7 +761,7 @@ class UserByHashtag(QObject):
         hashtags = hashtags.replace(" ", "")
         hashtags = hashtags.replace("\n", "")
         self.task_list = hashtags.split("#")
-        if "" in self.task_list:
+        while "" in self.task_list:
             self.task_list.remove("")
         if len(self.task_list) == 0:
             self.log("ERROR", "There is no valid task to run, check your input.")
