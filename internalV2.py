@@ -234,7 +234,7 @@ class VideoCrawler(QObject):
     task: dict = {}
     task_list: []
     progress: int = 0
-    output_path: str = "/Users/rockey220224/Desktop/"
+    output_path: str = "/Users/rockey220224/Desktop"
     file_name = ""
     begin_line: int = 2
 
@@ -368,7 +368,7 @@ class VideoCrawler(QObject):
         log_str: str = f"[{log_type}] {log_text}"
 
         def run(message: str):
-            self.send_lark(message, log_type == "COMPLETE" and self.feishu.when_complete_at)
+            self.feishu.send_lark(message, log_type == "COMPLETE" and self.feishu.when_complete_at)
 
         send_thread: Thread = Thread(target=run, args=(log_str,))
         send_thread.start()
@@ -453,7 +453,7 @@ class VideoCrawler(QObject):
         if url.startswith("https://vm.tiktok.com") or url.startswith("https://vt.tiktok.com"):
             return "tiktok_without_video_id"
         elif url.startswith("https://www.tiktok.com"):
-            return "toktok_with_video_id"
+            return "tiktok_with_video_id"
         self.log(log_type="ERROR", log_text=f"Invalid URL '{url}'.")
         return ""
 
@@ -555,7 +555,7 @@ class VideoCrawler(QObject):
 
     def tiktok_with_video_id_proc(self, url: str):
         video_id = self.get_tiktok_video_id(url)
-        url_ = "https://www.tiktok.com/api/recommend/item_list/?aid=1988&app_language=es&app_name=tiktok_web&battery_info=0.44&browser_language=zh-CN&browser_name=Mozilla&browser_online=true&browser_platform=MacIntel&browser_version=5.0%20%28Macintosh%3B%20Intel%20Mac%20OS%20X%2010_15_7%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F104.0.0.0%20Safari%2F537.36&channel=tiktok_web&cookie_enabled=true&count=30&device_id=7106463322559923714&device_platform=web_pc&focus_state=true&from_page=video&history_len=1&insertedItemID=" + video_id + "&is_fullscreen=true&is_page_visible=true&os=mac&priority_region=&referer=&region=DE&screen_height=1920&screen_width=1080&tz_name=Asia%2FShanghai&webcast_language=es&msToken=" + ms_token
+        url_ = "https://www.tiktok.com/api/recommend/item_list/?aid=1988&app_language=es&app_name=tiktok_web&battery_info=0.44&browser_language=zh-CN&browser_name=Mozilla&browser_online=true&browser_platform=MacIntel&browser_version=5.0%20%28Macintosh%3B%20Intel%20Mac%20OS%20X%2010_15_7%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F104.0.0.0%20Safari%2F537.36&channel=tiktok_web&cookie_enabled=true&count=30&device_id=7106463322559923714&device_platform=web_pc&focus_state=true&from_page=video&history_len=1&insertedItemID=" + video_id + "&is_fullscreen=true&is_page_visible=true&os=mac&priority_region=&referer=&region=DE&screen_height=1920&screen_width=1080&tz_name=Asia%2FShanghai&webcast_language=es&msToken=" + self.ms_token
         response = self.request_get(url=url_, allow_redirects=False)
         if response is None:
             return
@@ -598,7 +598,7 @@ class UserByHashtag(QObject):
     user_home_page_list = []
     is_notice = False
 
-    output_path = "/Users/rockey211224/Desktop"
+    output_path = "/Users/rockey220224/Desktop"
     file_name = ""
 
     app: QApplication
