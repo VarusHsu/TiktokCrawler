@@ -195,6 +195,7 @@ class ConfigWindow(QWidget):
         self.output_path_button = QPushButton(self)
         self.output_path_button.move(self.right_button_position_x,self.config_window_edge_distance + self.config_window_edge_distance + self.line_edit_height - 4)
         self.output_path_button.setText("选择路径")
+        self.output_path_button.clicked.connect(self.handle_output_path_button_click)
 
         self.begin_line_edit_text = QLineEdit(self)
         self.begin_line_edit_text.move(self.line_edit_position_x, self.config_window_edge_distance)
@@ -235,6 +236,15 @@ class ConfigWindow(QWidget):
     def handle_cancel_button_click(self):
         self.update_ui_signals.log_signal.emit("CONFIG", "Cancel.")
         self.close()
+
+    def handle_output_path_button_click(self):
+        self.output_path_dialog = QFileDialog(self)
+        self.output_path_dialog.setFileMode(QFileDialog.FileMode.Directory)
+        self.output_path_dialog.show()
+        self.output_path = self.output_path_dialog.getExistingDirectory()
+        self.output_path_dialog.close()
+        self.output_path_edit_text.setText(self.output_path)
+        self.update_ui_signals.log_signal.emit("CONFIG", f"Set output path '{self.output_path}'")
 
 
 class VideoCrawler(QObject):
