@@ -128,6 +128,21 @@ class Feishu(QObject):
         return self.at_user_open_id
 
 
+class HashtagConfigWindow(QWidget):
+    config_window_width = 400
+    config_window_height = 250
+    button_width: int = 80
+    button_height: int = 20
+    line_edit_height: int = 20
+    line_edit_position_x = 80
+    config_window_edge_distance = 10
+    output_line_edit_width = 300
+
+    windows: QWidget
+    save_button: QPushButton
+    cancel_button: QPushButton
+
+
 class ConfigWindow(QWidget):
     config_window_width = 400
     config_window_height = 250
