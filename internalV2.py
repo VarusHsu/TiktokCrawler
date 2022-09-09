@@ -152,6 +152,8 @@ class ConfigWindow(QWidget):
     line_edit_position_x = 80
     config_window_edge_distance = 10
     output_line_edit_width = 300
+    right_button_position_x = 300
+    edit_line_width = 200
 
     begin_line: int
     output_path: str
@@ -159,10 +161,12 @@ class ConfigWindow(QWidget):
     windows: QWidget
     save_button: QPushButton
     cancel_button: QPushButton
+    output_path_button: QPushButton
     begin_line_edit_text: QLineEdit
     output_path_edit_text: QLineEdit
     begin_line_label: QLabel
     output_path_label: QLabel
+    output_path_dialog: QFileDialog
 
     adjust_config_signals: AdjustConfigSignals
     update_ui_signals: UpdateUISignals
@@ -188,14 +192,20 @@ class ConfigWindow(QWidget):
         self.cancel_button.clicked.connect(self.handle_cancel_button_click)
         self.cancel_button.setText("取消")
 
+        self.output_path_button = QPushButton(self)
+        self.output_path_button.move(self.right_button_position_x,self.config_window_edge_distance + self.config_window_edge_distance + self.line_edit_height - 4)
+        self.output_path_button.setText("选择路径")
+
         self.begin_line_edit_text = QLineEdit(self)
         self.begin_line_edit_text.move(self.line_edit_position_x, self.config_window_edge_distance)
         self.begin_line_edit_text.setText(str(self.begin_line))
+        self.begin_line_edit_text.setFixedWidth(self.edit_line_width)
         self.begin_line_edit_text.setValidator(QIntValidator())
 
         self.output_path_edit_text = QLineEdit(self)
         self.output_path_edit_text.move(self.line_edit_position_x, self.config_window_edge_distance + self.config_window_edge_distance + self.line_edit_height)
         self.output_path_edit_text.setText(self.output_path)
+        self.output_path_edit_text.setFixedWidth(self.edit_line_width)
 
         self.begin_line_label = QLabel(self)
         self.begin_line_label.setText("起点行数")
@@ -203,7 +213,7 @@ class ConfigWindow(QWidget):
 
         self.output_path_label = QLabel(self)
         self.output_path_label.setText("输出路径")
-        self.output_path_label.move(self.config_window_edge_distance, self.config_window_edge_distance + self.config_window_edge_distance + self.line_edit_height)
+        self.output_path_label.move(self.config_window_edge_distance, self.config_window_edge_distance + self.config_window_edge_distance + self.line_edit_height + 4)
 
     def handle_save_button_click(self):
         try:
@@ -236,6 +246,7 @@ class VideoCrawler(QObject):
     progress_bar: QProgressBar
     log_box: QListWidget
     config_window: ConfigWindow
+    input_file_dialog: QFileDialog
 
     window_width: int = 500
     window_height: int = 314
@@ -358,7 +369,8 @@ class VideoCrawler(QObject):
         pass
 
     def handle_import_button_click(self):
-        res = QFileDialog.getOpenFileNames()[0]
+        self.input_file_dialog = QFileDialog(self.windows)
+        res = self.input_file_dialog.getOpenFileNames()[0]
         if len(res) != 0:
             self.file = res[0]
             self.log(log_type="FILE_IMPORT", log_text=f"Path:{self.file}.")
