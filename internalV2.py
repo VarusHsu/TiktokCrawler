@@ -13,7 +13,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 import openpyxl
 from PyQt6.QtGui import QIntValidator
 from requests.exceptions import MissingSchema, SSLError
-
+from generate_path import default_path
 
 class Reporter:
     container: dict
@@ -270,7 +270,7 @@ class VideoCrawler(QObject):
     task: dict = {}
     task_list: []
     progress: int = 0
-    output_path: str = "/Users/rockey220224/Desktop"
+    output_path: str = default_path
     file_name = ""
     begin_line: int = 2
 
@@ -635,7 +635,7 @@ class UserByHashtag(QObject):
     user_home_page_list = []
     is_notice = False
 
-    output_path = "/Users/rockey220224/Desktop"
+    output_path = default_path
     file_name = ""
 
     app: QApplication
