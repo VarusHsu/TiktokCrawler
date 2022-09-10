@@ -25,5 +25,5 @@
 ```
 * 清除已经打的包以及打包缓存
 ```shell
-make clear
+  make clear
 ```
