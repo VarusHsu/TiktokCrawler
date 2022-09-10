@@ -14,32 +14,7 @@ import openpyxl
 from PyQt6.QtGui import QIntValidator
 from requests.exceptions import MissingSchema, SSLError
 from generate_path import default_path
-
-class Reporter:
-    container: dict
-    time_container: dict
-
-    def __init__(self):
-        self.container = {}
-        self.time_container = {}
-
-    def init_counter(self, name: str):
-        self.container[name] = 0
-
-    def self_increase(self, name: str):
-        self.container[name] += 1
-
-    def get_counter(self, name: str) -> int:
-        return self.container[name]
-
-    def set_counter(self, name: str, value: int):
-        self.container[name] = value
-
-    def set_timer(self, name: str = ""):
-        self.time_container[name] = int(time.time() * 1000)
-
-    def get_during(self, name: str = "") -> int:
-        return int(time.time() * 1000) - self.time_container[name]
+from repoter import Reporter
 
 
 class ResultStatus:
@@ -138,9 +113,20 @@ class HashtagConfigWindow(QWidget):
     config_window_edge_distance = 10
     output_line_edit_width = 300
 
+    output_path: str
+
     windows: QWidget
     save_button: QPushButton
     cancel_button: QPushButton
+
+    adjust_config_signals: AdjustConfigSignals
+    update_ui_signals: UpdateUISignals
+
+    def __init__(self, output_path: str, adjust_config_signals: AdjustConfigSignals, update_ui_signals: UpdateUISignals):
+        super().__init__()
+        self.output_path = output_path
+        self.update_ui_signals = update_ui_signals
+        self.adjust_config_signals = adjust_config_signals
 
 
 class ConfigWindow(QWidget):
@@ -193,7 +179,7 @@ class ConfigWindow(QWidget):
         self.cancel_button.setText("取消")
 
         self.output_path_button = QPushButton(self)
-        self.output_path_button.move(self.right_button_position_x,self.config_window_edge_distance + self.config_window_edge_distance + self.line_edit_height - 4)
+        self.output_path_button.move(self.right_button_position_x, self.config_window_edge_distance + self.config_window_edge_distance + self.line_edit_height - 4)
         self.output_path_button.setText("选择路径")
         self.output_path_button.clicked.connect(self.handle_output_path_button_click)
 
@@ -673,12 +659,12 @@ class UserByHashtag(QObject):
 
         self.crawl_button = QPushButton(self.windows)
         self.crawl_button.setText("开始爬取")
-        self.crawl_button.move(int(self.window_width / 8 * 7 - self.button_width / 2), int(3 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance - 2*self.adjust_distance -1)
+        self.crawl_button.move(int(self.window_width / 8 * 7 - self.button_width / 2), int(3 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance - 2 * self.adjust_distance - 1)
         self.crawl_button.clicked.connect(self.handle_crawl_button_click)
 
         self.verify_button = QPushButton(self.windows)
         self.verify_button.setText("格式校验")
-        self.verify_button.move(int(self.window_width / 8 * 7 - self.button_width / 2), int(1.5 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance - 2*self.adjust_distance-1)
+        self.verify_button.move(int(self.window_width / 8 * 7 - self.button_width / 2), int(1.5 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance - 2 * self.adjust_distance - 1)
         self.verify_button.clicked.connect(self.handle_verify_button_click)
 
         self.output_path_label = QLabel(self.windows)
@@ -705,7 +691,7 @@ class UserByHashtag(QObject):
         self.notice_me_label.move(self.notice_tip_distance, int(1.5 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance)
 
         self.notice_email_edit_text = QLineEdit(self.windows)
-        self.notice_email_edit_text.move(self.notice_x_distance, int(3 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance- self.adjust_distance)
+        self.notice_email_edit_text.move(self.notice_x_distance, int(3 * self.edge_distance) + self.window_height - self.button_height - 4 * self.edge_distance - self.adjust_distance)
         self.notice_email_edit_text.setEnabled(False)
 
         self.notice_email_label = QLabel(self.windows)
