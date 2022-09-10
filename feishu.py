@@ -1,7 +1,6 @@
 import json
 
 import requests
-from signals import UpdateUISignals
 
 
 class Feishu:
