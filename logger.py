@@ -1,3 +1,5 @@
+from threading import Thread
+
 from PyQt6.QtCore import QObject
 
 import feishu
@@ -13,6 +15,19 @@ class Logger:
 
     def LogMessage(self, message_type: str, message_text: str, notice_email: str = ""):
         message: str = f"[{message_type.upper()}] {message_text}"
-        self.lark_sender.send_lark(message, notice_email)
+
+        def run(send_message: str, email: str):
+            self.lark_sender.send_lark(send_message, email)
+        send_lark_thread: Thread = Thread(target=run, args=(message, email))
+        send_lark_thread.start()
+        message = self.__remove_illegal_byte(message)
         self.signals_sender.log_signal.emit(message)
+
+    @staticmethod
+    def __remove_illegal_byte(text: str) -> str:
+        res: str = ""
+        for byte in text:
+            if byte.isascii():
+                res = res + byte
+        return res
 
