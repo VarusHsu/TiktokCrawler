@@ -9,3 +9,16 @@ class HttpResponseStatus(Enum):
     Redirects = 4
     NoFound = 5
     Success = 6
+
+
+class XlsxWorkerStatus(Enum):
+    Invalid = 0
+    Reader = 1
+    Writer = 2
+
+
+class XlsxReadStatus(Enum):
+    Invalid = 0
+    NoMoreData = 1
+    PermissionDenied = 2
+    Success = 3
