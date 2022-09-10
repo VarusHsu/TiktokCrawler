@@ -1,9 +1,11 @@
+import time
+
 import openpyxl
 from openpyxl import Workbook
 from openpyxl.utils.exceptions import InvalidFileException
 from openpyxl.worksheet.worksheet import Worksheet
 
-from enums import XlsxWorkerStatus, XlsxReadStatus
+from enums import XlsxWorkerStatus, XlsxReadStatus, XlsxWriteStatus
 
 
 class ReadResult:
@@ -20,6 +22,8 @@ class XlsxWorker:
     cur_line: int
     wb: Workbook
     ws: Worksheet
+    output_path: str
+    column_count: int = 0
 
     def __init__(self):
         pass
@@ -34,6 +38,21 @@ class XlsxWorker:
             self.cur_line += 1
             return ReadResult(XlsxReadStatus.Success, value)
 
+    def writer_line(self, value: dict) -> XlsxWriteStatus:
+        if self.status != XlsxWorkerStatus.Writer:
+            return XlsxWriteStatus.PermissionDenied
+        for key in value.keys():
+            flag: bool = False
+            for i in range(1, self.column_count + 1):
+                if self.ws.cell(1, i).value == key:
+                    self.ws.cell(row=self.cur_line, column=i, value=value[key])
+                    flag = True
+                    break
+            if not flag:
+                return XlsxWriteStatus.NoSuchField
+        self.cur_line += 1
+        return XlsxWriteStatus.Success
+
 
 def init_reader(path: str) -> XlsxWorker | None:
     instance = XlsxWorker()
@@ -47,5 +66,22 @@ def init_reader(path: str) -> XlsxWorker | None:
     return instance
 
 
-def init_writer() -> XlsxWorker:
-    pass
+def init_writer(path: str, fields: tuple) -> XlsxWorker:
+    instance = XlsxWorker()
+    instance.status = XlsxWorkerStatus.Writer
+    filename = time.strftime("%Y-%m-%d_%H:%M:%S.xlsx")
+    if path.endswith("/"):
+        instance.output_path = path + filename
+    else:
+        instance.output_path = path + '/' + filename
+    instance.wb = openpyxl.Workbook()
+    instance.ws = instance.wb.worksheets[0]
+    column = 1
+    instance.column_count = len(fields)
+    for field in fields:
+        instance.ws.cell(row=1, column=column,value=field)
+        column += 1
+    instance.wb.save(instance.output_path)
+    instance.cur_line = 2
+    return instance
+

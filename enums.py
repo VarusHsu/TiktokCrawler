@@ -22,3 +22,11 @@ class XlsxReadStatus(Enum):
     NoMoreData = 1
     PermissionDenied = 2
     Success = 3
+
+
+class XlsxWriteStatus(Enum):
+    Invalid = 0
+    NoSuchField = 1
+    Success = 2
+    PermissionDenied = 3
+
