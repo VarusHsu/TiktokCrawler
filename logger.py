@@ -13,12 +13,12 @@ class Logger:
         self.lark_sender = lark_sender
         self.signals_sender = signals_sender
 
-    def LogMessage(self, message_type: str, message_text: str, notice_email: str = ""):
+    def log_message(self, message_type: str, message_text: str, notice_email: str = ""):
         message: str = f"[{message_type.upper()}] {message_text}"
 
         def run(send_message: str, email: str):
             self.lark_sender.send_lark(send_message, email)
-        send_lark_thread: Thread = Thread(target=run, args=(message, email))
+        send_lark_thread: Thread = Thread(target=run, args=(message, notice_email))
         send_lark_thread.start()
         message = self.__remove_illegal_byte(message)
         self.signals_sender.log_signal.emit(message)
