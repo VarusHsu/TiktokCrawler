@@ -1,8 +1,10 @@
+import os.path
 import sys
+from threading import Thread
 
 from PyQt6 import QtCore
 from PyQt6.QtCore import QObject
-from PyQt6.QtWidgets import QApplication, QWidget, QListWidget, QPushButton, QProgressBar, QFileDialog, QLineEdit, QLabel
+from PyQt6.QtWidgets import QApplication, QWidget, QListWidget, QPushButton, QProgressBar, QFileDialog, QLineEdit, QLabel, QCheckBox
 
 from feishu import Feishu
 from logger import Logger
@@ -27,7 +29,8 @@ class ConfigWindows(QObject):
     notice_email_label: QLabel
     output_path_button: QPushButton
     output_path_filedialog: QFileDialog
-
+    notice_enable_checkbox: QCheckBox
+    notice_enable_label: QLabel
 
     # signals
     update_ui_signals: UpdateUISignals
@@ -51,11 +54,13 @@ class ConfigWindows(QObject):
         self.save_button = QPushButton(self.windows)
         self.save_button.setText("Save")
         self.save_button.move(20, 280)
+        self.save_button.setFixedWidth(80)
         self.save_button.clicked.connect(self.handle_save_button_clicked)
 
         self.cancel_button = QPushButton(self.windows)
         self.cancel_button.setText("Cancel")
         self.cancel_button.move(400, 280)
+        self.cancel_button.setFixedWidth(80)
         self.cancel_button.clicked.connect(self.handle_cancel_button_clicked)
 
         self.output_path_label = QLabel(self.windows)
@@ -64,20 +69,40 @@ class ConfigWindows(QObject):
 
         self.output_path_line_edit = QLineEdit(self.windows)
         self.output_path_line_edit.setText(self.output_path)
-        self.output_path_line_edit.setFixedWidth(280)
+        self.output_path_line_edit.setFixedWidth(260)
         self.output_path_line_edit.move(130, 17)
 
         self.output_path_button = QPushButton(self.windows)
         self.output_path_button.setText("Select")
-        self.output_path_button.move(420, 13)
+        self.output_path_button.setFixedWidth(80)
+        self.output_path_button.move(400, 13)
         self.output_path_button.clicked.connect(self.handle_select_button_clicked)
 
+        self.notice_email_label = QLabel(self.windows)
+        self.notice_email_label.setText("Notice email:")
+        self.notice_email_label.move(20, 50)
+
+        self.notice_email_line_edit = QLineEdit(self.windows)
+        self.notice_email_line_edit.setFixedWidth(260)
+        self.notice_email_line_edit.move(130, 47)
+
+        self.notice_enable_checkbox = QCheckBox(self.windows)
+        self.notice_enable_checkbox.move(400, 50)
+
+        self.notice_enable_label = QLabel(self.windows)
+        self.notice_enable_label.setText("Enable")
+        self.notice_enable_label.move(420, 51)
         self.windows.show()
         pass
 
     def handle_save_button_clicked(self):
-
+        self.adjust_config_signals.adjust_output_path_signal.emit(self.output_path_line_edit.text())
+        if self.notice_enable_checkbox.isChecked():
+            self.adjust_config_signals.adjust_notice_email.emit(self.notice_email_line_edit.text())
+        else:
+            self.adjust_config_signals.adjust_notice_email.emit("")
         pass
+        self.windows.close()
 
     def handle_cancel_button_clicked(self):
         self.logger.log_message("CONFIG", "Cancel.")
@@ -89,7 +114,9 @@ class ConfigWindows(QObject):
         self.output_path_filedialog.setWindowTitle("Select output directory")
         self.output_path_filedialog.setFileMode(QFileDialog.FileMode.Directory)
         self.output_path_filedialog.show()
-        self.output_path = self.output_path_filedialog.getExistingDirectory()
+        directory = self.output_path_filedialog.getExistingDirectory()
+        if directory != "":
+            self.output_path = directory
         self.output_path_filedialog.close()
         self.output_path_line_edit.setText(self.output_path)
         pass
@@ -123,6 +150,7 @@ class PlayCountCrawler(QObject):
     # status
     output_path = default_path
     input_file_name = ''
+    notice_email = ''
 
     def __init__(self):
         super().__init__()
@@ -130,6 +158,8 @@ class PlayCountCrawler(QObject):
         self.update_ui_signals = UpdateUISignals()
         self.adjust_config_signals = AdjustConfigSignals()
         self.update_ui_signals.log_signal.connect(self.handle_log_signal)
+        self.adjust_config_signals.adjust_output_path_signal.connect(self.handle_update_output_directory_signal)
+        self.adjust_config_signals.adjust_notice_email.connect(self.handle_update_notice_email_signal)
 
         self.feishu = Feishu()
         self.logger = Logger(lark_sender=self.feishu, signals_sender=self.update_ui_signals)
@@ -149,16 +179,19 @@ class PlayCountCrawler(QObject):
 
         self.crawl_button = QPushButton(self.windows)
         self.crawl_button.setText("Run")
+        self.crawl_button.setFixedWidth(80)
         self.crawl_button.move(20, 385)
 
         self.import_button = QPushButton(self.windows)
         self.import_button.setText("Open")
         self.import_button.move(330, 385)
+        self.import_button.setFixedWidth(80)
         self.import_button.clicked.connect(self.handle_import_button_clicked)
 
         self.config_button = QPushButton(self.windows)
         self.config_button.setText("Setting")
-        self.config_button.move(660, 385)
+        self.config_button.move(650, 385)
+        self.config_button.setFixedWidth(80)
         self.config_button.clicked.connect(self.handle_config_button_clicked)
 
         self.progress_bar = QProgressBar(self.windows)
@@ -195,3 +228,30 @@ class PlayCountCrawler(QObject):
     def handle_log_signal(self, message):
         self.log_box.addItem(message)
         self.log_box.verticalScrollBar().setValue(self.log_box.verticalScrollBar().maximum())
+
+    def handle_update_output_directory_signal(self, path: str):
+        ok = self.check_directory_exist(path=path)
+        if ok:
+            self.logger.log_message("CONFIG", f"Set '{path}' as output path success.")
+            self.output_path = path
+        else:
+            self.logger.log_message("ERROR", f"'{path}' not found.")
+
+    def handle_update_notice_email_signal(self, email):
+        if email == "":
+            self.logger.log_message("CONFIG", "There will no notice when complete.")
+        else:
+            def run(notice_email: str):
+                ok = self.feishu.verify_email(email=notice_email)
+                if ok:
+                    self.logger.log_message("CONFIG", f"Notice email '{notice_email}'.")
+                    self.notice_email = notice_email
+                else:
+                    self.logger.log_message("ERROR", f"Check you email spell '{notice_email}'.")
+            thread: Thread = Thread(target=run, args=(email,))
+            thread.start()
+
+    @staticmethod
+    def check_directory_exist(path: str) ->bool:
+        return os.path.exists(path)
+
