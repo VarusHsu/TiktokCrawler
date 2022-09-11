@@ -14,3 +14,5 @@ run_play_count:
 run_hashtag:
 	./set_default_path.sh \
 	&&python3 ./user_by_hashtag.py
+path:
+	./set_default_path.sh

@@ -2,7 +2,7 @@ import sys
 
 from PyQt6 import QtCore
 from PyQt6.QtCore import QObject
-from PyQt6.QtWidgets import QApplication, QWidget, QListWidget, QPushButton, QProgressBar, QFileDialog
+from PyQt6.QtWidgets import QApplication, QWidget, QListWidget, QPushButton, QProgressBar, QFileDialog, QLineEdit, QLabel
 
 from feishu import Feishu
 from logger import Logger
@@ -14,19 +14,33 @@ from generate_path import default_path
 
 
 class ConfigWindows(QObject):
+    # module
+    logger: Logger
+
     # ui_widget
     windows: QWidget
     save_button: QPushButton
     cancel_button: QPushButton
+    output_path_line_edit: QLineEdit
+    output_path_label: QLabel
+    notice_email_line_edit: QLineEdit
+    notice_email_label: QLabel
+    output_path_button: QPushButton
+    output_path_filedialog: QFileDialog
+
 
     # signals
     update_ui_signals: UpdateUISignals
     adjust_config_signals: AdjustConfigSignals
 
-    def __init__(self, update_ui_signals: UpdateUISignals, adjust_config_signals: AdjustConfigSignals):
+    output_path: str
+
+    def __init__(self, update_ui_signals: UpdateUISignals, adjust_config_signals: AdjustConfigSignals, logger: Logger, output_path):
         super().__init__()
         self.update_ui_signals = update_ui_signals
         self.adjust_config_signals = adjust_config_signals
+        self.logger = logger
+        self.output_path = output_path
 
     def render(self):
         self.windows = QWidget()
@@ -37,13 +51,47 @@ class ConfigWindows(QObject):
         self.save_button = QPushButton(self.windows)
         self.save_button.setText("Save")
         self.save_button.move(20, 280)
+        self.save_button.clicked.connect(self.handle_save_button_clicked)
 
         self.cancel_button = QPushButton(self.windows)
         self.cancel_button.setText("Cancel")
         self.cancel_button.move(400, 280)
+        self.cancel_button.clicked.connect(self.handle_cancel_button_clicked)
+
+        self.output_path_label = QLabel(self.windows)
+        self.output_path_label.setText("Output directory:")
+        self.output_path_label.move(20, 20)
+
+        self.output_path_line_edit = QLineEdit(self.windows)
+        self.output_path_line_edit.setText(self.output_path)
+        self.output_path_line_edit.setFixedWidth(280)
+        self.output_path_line_edit.move(130, 17)
+
+        self.output_path_button = QPushButton(self.windows)
+        self.output_path_button.setText("Select")
+        self.output_path_button.move(420, 13)
+        self.output_path_button.clicked.connect(self.handle_select_button_clicked)
 
         self.windows.show()
+        pass
 
+    def handle_save_button_clicked(self):
+
+        pass
+
+    def handle_cancel_button_clicked(self):
+        self.logger.log_message("CONFIG", "Cancel.")
+        self.windows.close()
+        pass
+
+    def handle_select_button_clicked(self):
+        self.output_path_filedialog = QFileDialog(self.windows)
+        self.output_path_filedialog.setWindowTitle("Select output directory")
+        self.output_path_filedialog.setFileMode(QFileDialog.FileMode.Directory)
+        self.output_path_filedialog.show()
+        self.output_path = self.output_path_filedialog.getExistingDirectory()
+        self.output_path_filedialog.close()
+        self.output_path_line_edit.setText(self.output_path)
         pass
 
 
@@ -140,7 +188,7 @@ class PlayCountCrawler(QObject):
         pass
 
     def handle_config_button_clicked(self):
-        self.config_windows = ConfigWindows(self.update_ui_signals, self.adjust_config_signals)
+        self.config_windows = ConfigWindows(self.update_ui_signals, self.adjust_config_signals, self.logger, self.output_path)
         self.config_windows.render()
         pass
 

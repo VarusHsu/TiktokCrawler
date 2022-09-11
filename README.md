@@ -27,3 +27,7 @@
 ```shell
   make clear
 ```
+* 生成默认输出路径
+```shell
+  make path
+```
