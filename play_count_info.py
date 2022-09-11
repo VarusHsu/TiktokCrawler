@@ -1,8 +1,9 @@
 import internalV2
+import play_count_internal
 
 
 def main():
-    app = internalV2.VideoCrawler()
+    app = play_count_internal.PlayCountCrawler()
     app.render()
     pass
 

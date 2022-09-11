@@ -14,7 +14,7 @@ import openpyxl
 from PyQt6.QtGui import QIntValidator
 from requests.exceptions import MissingSchema, SSLError
 from generate_path import default_path
-from repoter import Reporter
+from reporter import Reporter
 
 
 class ResultStatus:
