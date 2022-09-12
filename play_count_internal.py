@@ -60,10 +60,12 @@ class PlayCountCrawler(QObject):
         self.update_ui_signals.log_signal.connect(self.handle_log_signal)
         self.adjust_config_signals.adjust_output_path_signal.connect(self.handle_update_output_directory_signal)
         self.adjust_config_signals.adjust_notice_email.connect(self.handle_update_notice_email_signal)
+        self.update_ui_signals.progress_bar_update_signal.connect(self.handle_update_progress_bar_signal)
 
         self.feishu = Feishu()
         self.logger = Logger(lark_sender=self.feishu, signals_sender=self.update_ui_signals)
         self.requester = Requester(logger=self.logger)
+        self.reporter = Reporter()
 
     def render(self):
         self.app = QApplication(sys.argv)
@@ -111,7 +113,9 @@ class PlayCountCrawler(QObject):
             if self.xlsx_reader is None:
                 self.logger.log_message("ERROR", "Open a xlsx file first.")
                 return
+            self.progress_bar.setValue(0)
             self.logger.log_message("BEGIN", "Crawl start.")
+            self.reporter.set_timer()
             while True:
                 read_res = self.xlsx_reader.read_url()
                 if read_res.status == XlsxReadStatus.NoMoreData:
@@ -134,6 +138,10 @@ class PlayCountCrawler(QObject):
                     else:
                         res = self.www_tiktok_com(url)
                     self.xlsx_writer.writer_line(res)
+                    self.update_ui_signals.progress_bar_update_signal.emit(int((self.xlsx_reader.cur_line-2)/self.xlsx_reader.total_rows * 100))
+            time.sleep(3)
+            during = self.reporter.get_during()
+            self.logger.log_message("SUMMERY", f"Cost {during/1000} s")
             self.logger.log_message("COMPLETE", "Complete.", self.notice_email)
 
         crawl_thread: Thread = Thread(target=run)
@@ -185,6 +193,9 @@ class PlayCountCrawler(QObject):
                     self.logger.log_message("ERROR", f"Check you email spell '{notice_email}'.")
             thread: Thread = Thread(target=run, args=(email,))
             thread.start()
+
+    def handle_update_progress_bar_signal(self, progress):
+        self.progress_bar.setValue(progress)
 
     @staticmethod
     def check_directory_exist(path: str) ->bool:

@@ -24,6 +24,7 @@ class XlsxWorker:
     ws: Worksheet
     output_path: str
     column_count: int = 0
+    total_rows: int = 0
 
     def __init__(self):
         pass
@@ -56,6 +57,12 @@ class XlsxWorker:
         self.wb.save(self.output_path)
         return XlsxWriteStatus.Success
 
+    def get_total_rows(self):
+        row = 2
+        while self.ws.cell(row, 1).value is not None:
+            row += 1
+            self.total_rows += 1
+
 
 def init_reader(path: str) -> XlsxWorker | None:
     instance = XlsxWorker()
@@ -66,6 +73,7 @@ def init_reader(path: str) -> XlsxWorker | None:
     except InvalidFileException:
         return None
     instance.cur_line = 2
+    instance.get_total_rows()
     return instance
 
 
@@ -83,3 +91,4 @@ def init_writer(path: str, fields: tuple) -> XlsxWorker:
     instance.wb.save(path)
     instance.cur_line = 2
     return instance
+

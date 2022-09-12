@@ -3,7 +3,7 @@ from PyQt6.QtCore import QObject, pyqtSignal
 
 class UpdateUISignals(QObject):
     log_signal = pyqtSignal(str)
-    progress_bar_update_signal = pyqtSignal()
+    progress_bar_update_signal = pyqtSignal(int)
 
 
 class AdjustConfigSignals(QObject):
