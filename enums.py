@@ -30,3 +30,18 @@ class XlsxWriteStatus(Enum):
     Success = 2
     PermissionDenied = 3
 
+
+class UrlType(Enum):
+    Invalid = 0
+    VmTiktokCom = 1
+    VtTiktokCom = 2
+    WwwTiktokCom = 3
+
+
+class VideoResponseStatus(Enum):
+    Invalid = "Invalid"
+    Success = "Success"
+    LoseEfficacy = "LoseEfficacy"
+    BadUrlOrNoImplement = "BadUrlOrNoImplement"
+    NetWorkError = "NetWorkError"
+    ApiDataFormatError = "ApiDataFormatError"

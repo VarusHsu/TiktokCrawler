@@ -5,7 +5,7 @@ from openpyxl import Workbook
 from openpyxl.utils.exceptions import InvalidFileException
 from openpyxl.worksheet.worksheet import Worksheet
 
-from enums import XlsxWorkerStatus, XlsxReadStatus, XlsxWriteStatus
+from enums import XlsxWorkerStatus, XlsxReadStatus, XlsxWriteStatus,VideoResponseStatus
 
 
 class ReadResult:
@@ -45,12 +45,15 @@ class XlsxWorker:
             flag: bool = False
             for i in range(1, self.column_count + 1):
                 if self.ws.cell(1, i).value == key:
+                    if type(value[key]) is VideoResponseStatus:
+                        value[key] = str(VideoResponseStatus)
                     self.ws.cell(row=self.cur_line, column=i, value=value[key])
                     flag = True
                     break
             if not flag:
                 return XlsxWriteStatus.NoSuchField
         self.cur_line += 1
+        self.wb.save(self.output_path)
         return XlsxWriteStatus.Success
 
 
@@ -68,20 +71,16 @@ def init_reader(path: str) -> XlsxWorker | None:
 
 def init_writer(path: str, fields: tuple) -> XlsxWorker:
     instance = XlsxWorker()
-    instance.status = XlsxWorkerStatus.Writer
-    filename = time.strftime("%Y-%m-%d_%H:%M:%S.xlsx")
-    if path.endswith("/"):
-        instance.output_path = path + filename
-    else:
-        instance.output_path = path + '/' + filename
     instance.wb = openpyxl.Workbook()
+    instance.output_path = path
+    instance.status = XlsxWorkerStatus.Writer
     instance.ws = instance.wb.worksheets[0]
     column = 1
     instance.column_count = len(fields)
     for field in fields:
         instance.ws.cell(row=1, column=column,value=field)
         column += 1
-    instance.wb.save(instance.output_path)
+    instance.wb.save(path)
     instance.cur_line = 2
     return instance
 

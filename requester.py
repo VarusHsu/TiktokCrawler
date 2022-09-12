@@ -29,27 +29,27 @@ class Requester:
         try:
             response = requests.get(url, allow_redirects=allow_redirects, headers=self.headers, timeout=timeout)
         except MissingSchema:
-            self.logger.LogMessage("ERROR", f"Invalid URL '{url}', perhaps you meant 'https://{url}'.")
+            self.logger.log_message("ERROR", f"Invalid URL '{url}', perhaps you meant 'https://{url}'.")
             return HttpResponse(HttpResponseStatus.MissingSchema, None)
         except SSLError:
-            self.logger.LogMessage("ERROR", f"Max retries exceeded with URL '{url}'.")
-            self.logger.LogMessage("TIPS", "Let me have a rest.")
-            self.logger.LogMessage("TIPS", "Crawl will continue after 20s.")
+            self.logger.log_message("ERROR", f"Max retries exceeded with URL '{url}'.")
+            self.logger.log_message("TIPS", "Let me have a rest.")
+            self.logger.log_message("TIPS", "Crawl will continue after 20s.")
             time.sleep(20)
             return HttpResponse(HttpResponseStatus.MaxRetriesExceededWithUrl, None)
         except requests.exceptions.ConnectionError:
-            self.logger.LogMessage("ERROR", "Internet error, maybe this error cause by VPN.")
+            self.logger.log_message("ERROR", "Internet error, maybe this error cause by VPN.")
             time.sleep(20)
             return HttpResponse(HttpResponseStatus.ConnectionError, None)
         else:
             if response.status_code == 200:
-                self.logger.LogMessage("GET", f"{response.status_code}: {url}.")
+                self.logger.log_message("GET", f"{response.status_code}: {url}.")
                 return HttpResponse(HttpResponseStatus.Success, response.content)
             elif response.status_code == 301:
                 return HttpResponse(HttpResponseStatus.Redirects, response.content)
             elif response.status_code == 404:
                 return HttpResponse(HttpResponseStatus.NoFound, response.content)
             else:
-                self.logger.LogMessage("GET", f"{response.status_code}: {url}.")
+                self.logger.log_message("GET", f"{response.status_code}: {url}.")
                 return HttpResponse(HttpResponseStatus.Invalid, response.content)
 
