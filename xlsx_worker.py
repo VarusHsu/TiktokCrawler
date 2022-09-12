@@ -5,7 +5,7 @@ from openpyxl import Workbook
 from openpyxl.utils.exceptions import InvalidFileException
 from openpyxl.worksheet.worksheet import Worksheet
 
-from enums import XlsxWorkerStatus, XlsxReadStatus, XlsxWriteStatus,VideoResponseStatus
+from enums import XlsxWorkerStatus, XlsxReadStatus, XlsxWriteStatus, VideoResponseStatus
 
 
 class ReadResult:
@@ -78,9 +78,8 @@ def init_writer(path: str, fields: tuple) -> XlsxWorker:
     column = 1
     instance.column_count = len(fields)
     for field in fields:
-        instance.ws.cell(row=1, column=column,value=field)
+        instance.ws.cell(row=1, column=column, value=field)
         column += 1
     instance.wb.save(path)
     instance.cur_line = 2
     return instance
-
