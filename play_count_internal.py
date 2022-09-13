@@ -135,8 +135,10 @@ class PlayCountCrawler(QObject):
                         res = self.vt_tiktok_com(url)
                     elif url_type == UrlType.VmTiktokCom:
                         res = self.vm_tiktok_com(url)
-                    else:
+                    elif url_type == UrlType.WwwTiktokCom:
                         res = self.www_tiktok_com(url)
+                    else:
+                        res = self.www_tiktok_com_t(url)
                     res["Url"] = url
                     self.xlsx_writer.writer_line(res)
                     self.update_ui_signals.progress_bar_update_signal.emit(int((self.xlsx_reader.cur_line-1)/self.xlsx_reader.total_rows * 100))
@@ -210,7 +212,9 @@ class PlayCountCrawler(QObject):
 
     @staticmethod
     def get_url_type(url: str) -> UrlType:
-        if url.startswith("https://vm.tiktok.com"):
+        if url.startswith("https://www.tiktok.com/t"):
+            return UrlType.WwwTiktokComT
+        elif url.startswith("https://vm.tiktok.com"):
             return UrlType.VmTiktokCom
         elif url.startswith("https://vt.tiktok.com"):
             return UrlType.VtTiktokCom
@@ -266,8 +270,16 @@ class PlayCountCrawler(QObject):
         res = self.get_tiktok_data_from_api(except_id=video_id, rsp_json=rsp_json)
         return res
 
+    def www_tiktok_com_t(self, url: str):
+        return self.vm_tiktok_com(url)
+
     @staticmethod
     def get_tiktok_video_id(url: str) -> str:
+        if url.startswith("https://m.tiktok.com/v/"):
+            return url[23: 42]
+        elif url.startswith("https://t.tiktok.com/i18n/share/video/"):
+            len("https://t.tiktok.com/i18n/share/video/")
+            return url[38: 57]
         res_begin_index: int = url.rfind("/")
         if url.find("?") != -1:
             res_end_index: int = url.find("?")
