@@ -1,8 +1,8 @@
-import internalV2
+import hashtag_internal
 
 
 def main():
-    app = internalV2.UserByHashtag()
+    app = hashtag_internal.Hashtag()
     app.render()
     pass
 

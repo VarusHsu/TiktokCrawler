@@ -21,19 +21,25 @@ class ConfigWindows(QObject):
     output_path_filedialog: QFileDialog
     notice_enable_checkbox: QCheckBox
     notice_enable_label: QLabel
+    hashtag_label: QLabel
+    hashtag_line_edit: QLineEdit
 
     # signals
     update_ui_signals: UpdateUISignals
     adjust_config_signals: AdjustConfigSignals
 
+    hashtag_str: str
     output_path: str
+    is_hashtag: bool
 
-    def __init__(self, update_ui_signals: UpdateUISignals, adjust_config_signals: AdjustConfigSignals, logger: Logger, output_path):
+    def __init__(self, update_ui_signals: UpdateUISignals, adjust_config_signals: AdjustConfigSignals, logger: Logger, output_path: str, is_hashtag: bool, hashtag_str: str):
         super().__init__()
         self.update_ui_signals = update_ui_signals
         self.adjust_config_signals = adjust_config_signals
         self.logger = logger
         self.output_path = output_path
+        self.is_hashtag = is_hashtag
+        self.hashtag_str =hashtag_str
 
     def render(self):
         self.windows = QWidget()
@@ -82,6 +88,17 @@ class ConfigWindows(QObject):
         self.notice_enable_label = QLabel(self.windows)
         self.notice_enable_label.setText("Enable")
         self.notice_enable_label.move(420, 51)
+
+        if self.is_hashtag:
+            self.hashtag_label = QLabel(self.windows)
+            self.hashtag_label.setText("Hashtag:")
+            self.hashtag_label.move(20, 80)
+
+            self.hashtag_line_edit = QLineEdit(self.windows)
+            self.hashtag_line_edit.setText(self.hashtag_str)
+            self.hashtag_line_edit.setFixedWidth(260)
+            self.hashtag_line_edit.move(130, 77)
+
         self.windows.show()
         pass
 
@@ -91,7 +108,8 @@ class ConfigWindows(QObject):
             self.adjust_config_signals.adjust_notice_email.emit(self.notice_email_line_edit.text())
         else:
             self.adjust_config_signals.adjust_notice_email.emit("")
-        pass
+        if self.is_hashtag:
+            self.adjust_config_signals.adjust_hashtag.emit(self.hashtag_line_edit.text())
         self.windows.close()
 
     def handle_cancel_button_clicked(self):

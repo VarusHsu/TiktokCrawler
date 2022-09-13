@@ -46,3 +46,10 @@ class VideoResponseStatus(Enum):
     BadUrlOrNoImplement = 3
     NetWorkError = 4
     ApiDataFormatError = 5
+
+
+class GetHashtagInfoStatus(Enum):
+    Invalid = 0
+    Success = 1
+    NetworkError = 2
+    NoSuchHashtag = 3

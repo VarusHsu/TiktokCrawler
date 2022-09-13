@@ -779,10 +779,10 @@ class UserByHashtag(QObject):
         return res
 
     def __set_task(self, hashtags: str):
-        if len(hashtags) == 0:
-            self.log("ERROR", "You should input something to hashtag.")
         hashtags = hashtags.replace(" ", "")
         hashtags = hashtags.replace("\n", "")
+        if len(hashtags) == 0:
+            self.log("ERROR", "You should input something to hashtag.")
         self.task_list = hashtags.split("#")
         while "" in self.task_list:
             self.task_list.remove("")
@@ -880,7 +880,7 @@ class UserByHashtag(QObject):
                         # self.log("CRAWL", "No found '@' in user signature.")
 
     def get_hashtag_info(self, hashtag: str) -> dict:
-        url = "https://www.tiktok.com/api/challenge/detail/?aid=1988&app_language=zh-Hant-TW&app_name=tiktok_web&battery_info=1&browser_language=zh-CN&browser_name=Mozilla&browser_online=true&browser_platform=MacIntel&browser_version=5.0%20%28Macintosh%3B%20Intel%20Mac%20OS%20X%2010_15_7%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F104.0.0.0%20Safari%2F537.36&challengeName=" + hashtag
+        url = "https://www.tiktok.com/api/challenge/detail/?aid=1988challengeName=" + hashtag
         response_content = self.request_get(url=url, allow_redirects=False)
         if response_content is None:
             self.log("ERROR", f"Get {hashtag} hashtag info failed, this may cause by network.")

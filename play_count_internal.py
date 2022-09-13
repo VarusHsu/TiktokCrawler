@@ -167,7 +167,7 @@ class PlayCountCrawler(QObject):
         pass
 
     def handle_config_button_clicked(self):
-        self.config_windows = ConfigWindows(self.update_ui_signals, self.adjust_config_signals, self.logger, self.output_path)
+        self.config_windows = ConfigWindows(self.update_ui_signals, self.adjust_config_signals, self.logger, self.output_path, False, "")
         self.config_windows.render()
         pass
 

@@ -10,3 +10,4 @@ class AdjustConfigSignals(QObject):
     adjust_output_path_signal = pyqtSignal(str)
     adjust_begin_line_signal = pyqtSignal(int)    # deprecated
     adjust_notice_email = pyqtSignal(str)
+    adjust_hashtag = pyqtSignal(str)
