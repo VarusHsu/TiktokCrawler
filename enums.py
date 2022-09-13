@@ -39,9 +39,9 @@ class UrlType(Enum):
 
 
 class VideoResponseStatus(Enum):
-    Invalid = "Invalid"
-    Success = "Success"
-    LoseEfficacy = "LoseEfficacy"
-    BadUrlOrNoImplement = "BadUrlOrNoImplement"
-    NetWorkError = "NetWorkError"
-    ApiDataFormatError = "ApiDataFormatError"
+    Invalid = 0
+    Success = 1
+    LoseEfficacy = 2
+    BadUrlOrNoImplement = 3
+    NetWorkError = 4
+    ApiDataFormatError = 5

@@ -137,8 +137,9 @@ class PlayCountCrawler(QObject):
                         res = self.vm_tiktok_com(url)
                     else:
                         res = self.www_tiktok_com(url)
+                    res["Url"] = url
                     self.xlsx_writer.writer_line(res)
-                    self.update_ui_signals.progress_bar_update_signal.emit(int((self.xlsx_reader.cur_line-2)/self.xlsx_reader.total_rows * 100))
+                    self.update_ui_signals.progress_bar_update_signal.emit(int((self.xlsx_reader.cur_line-1)/self.xlsx_reader.total_rows * 100))
             time.sleep(3)
             during = self.reporter.get_during()
             self.logger.log_message("SUMMERY", f"Cost {during/1000} s")
@@ -241,7 +242,6 @@ class PlayCountCrawler(QObject):
             return network_error_rsp
         rsp_json = json.loads(response.content)
         res = self.get_tiktok_data_from_api(video_id, rsp_json)
-        res["Url"] = url
         return res
 
     def vt_tiktok_com(self, url: str):
@@ -264,13 +264,15 @@ class PlayCountCrawler(QObject):
             return network_error_rsp
         rsp_json = json.loads(response.content)
         res = self.get_tiktok_data_from_api(except_id=video_id, rsp_json=rsp_json)
-        res["Url"] = url
         return res
 
     @staticmethod
     def get_tiktok_video_id(url: str) -> str:
         res_begin_index: int = url.rfind("/")
-        res_end_index: int = url.find("?")
+        if url.find("?") != -1:
+            res_end_index: int = url.find("?")
+        else:
+            res_end_index = len(url)
         res = url[res_begin_index + 1:res_end_index]
         for letter in res:
             if letter.isalpha():

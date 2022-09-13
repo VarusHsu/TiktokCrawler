@@ -47,7 +47,7 @@ class XlsxWorker:
             for i in range(1, self.column_count + 1):
                 if self.ws.cell(1, i).value == key:
                     if type(value[key]) is VideoResponseStatus:
-                        value[key] = str(VideoResponseStatus)
+                        value[key] = str(value[key].name)
                     self.ws.cell(row=self.cur_line, column=i, value=value[key])
                     flag = True
                     break
