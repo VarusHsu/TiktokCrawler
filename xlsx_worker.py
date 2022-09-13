@@ -64,7 +64,7 @@ class XlsxWorker:
             self.total_rows += 1
 
 
-def init_reader(path: str) -> XlsxWorker | None:
+def init_reader(path: str) -> 'XlsxWorker | None':
     instance = XlsxWorker()
     instance.status = XlsxWorkerStatus.Reader
     try:
