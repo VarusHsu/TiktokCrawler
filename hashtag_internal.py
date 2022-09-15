@@ -234,7 +234,7 @@ class Hashtag(QObject):
             self.logger.log_message("COMPLETE", "Crawl complete.")
             self.logger.log_message("SUMMERY", f"Visit videos: {video_count}.")
             self.logger.log_message("SUMMERY", f"Get users: {user_count}.")
-            self.logger.log_message("SUMMERY", f"Time cost: {time_during} ms.")
+            self.logger.log_message("SUMMERY", f"Time cost: {time_during/1000} s.")
 
         crawl_thread: Thread = Thread(target=run)
         crawl_thread.start()
