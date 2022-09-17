@@ -4,6 +4,7 @@ import sys
 import time
 from threading import Thread
 
+import requests
 from PyQt6 import QtCore
 from PyQt6.QtCore import QObject
 from PyQt6.QtWidgets import QApplication, QWidget, QListWidget, QPushButton, QFileDialog
@@ -66,6 +67,7 @@ class Hashtag(QObject):
     input_file_name = ''
     notice_email = ''
     ms_token = 'g8vXKy2fjhjd7xrrPcCU7Wfop7isL5KAuyjofBp061Mtaxm_fA5vZ_lAlj46mvE_NnR7x-m-022QnOLdb6Em6HbYv1qm-ek2LXKHh6aTtnLpk_Ke8h7MUTkvWAUZX0cQ1JhrowY='
+    contacted_xlsx_url = "https://docs.google.com/spreadsheets/d/1E4VLvzBMFyAXfg2tTJvsFPmow8FEDTAoqpJxhDy6IsU/export?format=xlsx&id=1E4VLvzBMFyAXfg2tTJvsFPmow8FEDTAoqpJxhDy6IsU"
 
     def __init__(self):
         super().__init__()
@@ -288,7 +290,11 @@ class Hashtag(QObject):
         return True
 
     def download_contacted_excel(self):
-        self.requester.get("", False)
-        with open(default_path + "cache.xlsx") as p:
-            pass
+        try:
+            response = requests.get(self.contacted_xlsx_url)
+            self.logger.log_message("CRAWL", "Get remove duplication success.")
+            with open(default_path+ "cache.xlsx", "wb")as p:
+                p.write(response.content)
+        except Exception as e:
+            self.logger.log_message("ERROR", f"Get remove duplication xlsx error: {e}")
 
