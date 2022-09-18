@@ -18,7 +18,7 @@ from signals import UpdateUISignals, AdjustConfigSignals
 from xlsx_worker import XlsxWorker, init_writer, init_reader
 from generate_path import default_path
 
-from enums import XlsxReadStatus, UrlType, VideoResponseStatus,HttpResponseStatus
+from enums import XlsxReadStatus, UrlType, VideoResponseStatus, HttpResponseStatus
 
 
 class PlayCountCrawler(QObject):
@@ -137,14 +137,16 @@ class PlayCountCrawler(QObject):
                         res = self.vm_tiktok_com(url)
                     elif url_type == UrlType.WwwTiktokCom:
                         res = self.www_tiktok_com(url)
+                    elif url_type == UrlType.KuaiVideoCom:
+                        res = self.kuai_video_com(url)
                     else:
                         res = self.www_tiktok_com_t(url)
                     res["Url"] = url
                     self.xlsx_writer.writer_line(res)
-                    self.update_ui_signals.progress_bar_update_signal.emit(int((self.xlsx_reader.cur_line-1)/self.xlsx_reader.total_rows * 100))
+                    self.update_ui_signals.progress_bar_update_signal.emit(int((self.xlsx_reader.cur_line - 1) / self.xlsx_reader.total_rows * 100))
             time.sleep(3)
             during = self.reporter.get_during()
-            self.logger.log_message("SUMMERY", f"Cost {during/1000} s")
+            self.logger.log_message("SUMMERY", f"Cost {during / 1000} s")
             self.logger.log_message("COMPLETE", "Complete.", self.notice_email)
 
         crawl_thread: Thread = Thread(target=run)
@@ -194,6 +196,7 @@ class PlayCountCrawler(QObject):
                     self.notice_email = notice_email
                 else:
                     self.logger.log_message("ERROR", f"Check you email spell '{notice_email}'.")
+
             thread: Thread = Thread(target=run, args=(email,))
             thread.start()
 
@@ -201,10 +204,10 @@ class PlayCountCrawler(QObject):
         self.progress_bar.setValue(progress)
 
     @staticmethod
-    def check_directory_exist(path: str) ->bool:
+    def check_directory_exist(path: str) -> bool:
         return os.path.exists(path)
 
-    def get_abs_output_filename(self) ->str:
+    def get_abs_output_filename(self) -> str:
         if self.output_path.endswith("/"):
             return self.output_path + time.strftime("%Y-%m-%d_%H:%M:%S.xlsx", time.localtime())
         else:
@@ -220,19 +223,21 @@ class PlayCountCrawler(QObject):
             return UrlType.VtTiktokCom
         elif url.startswith("https://www.tiktok.com"):
             return UrlType.WwwTiktokCom
+        elif url.startswith("https://kwai-video.com"):
+            return UrlType.KuaiVideoCom
         else:
             return UrlType.Invalid
 
     def vm_tiktok_com(self, url: str):
         network_error_rsp: dict = {
-                "Url": url,
-                "Status": VideoResponseStatus.NetWorkError,
-                "VideoId": None,
-                "Share": None,
-                "Played": None,
-                "Digg": None,
-                "Comment": None,
-            }
+            "Url": url,
+            "Status": VideoResponseStatus.NetWorkError,
+            "VideoId": None,
+            "Share": None,
+            "Played": None,
+            "Digg": None,
+            "Comment": None,
+        }
         response = self.requester.get(url=url, allow_redirects=False)
         if response.http_status not in [HttpResponseStatus.Success, HttpResponseStatus.Redirects]:
             return network_error_rsp
@@ -240,7 +245,8 @@ class PlayCountCrawler(QObject):
         url = soup.find(name="a")["href"]
         video_id = self.get_tiktok_video_id(url)
         network_error_rsp["VideoId"] = video_id
-        url = "https://www.tiktok.com/api/recommend/item_list/?aid=1988&app_language=es&app_name=tiktok_web&battery_info=0.44&browser_language=zh-CN&browser_name=Mozilla&browser_online=true&browser_platform=MacIntel&browser_version=5.0%20%28Macintosh%3B%20Intel%20Mac%20OS%20X%2010_15_7%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F104.0.0.0%20Safari%2F537.36&channel=tiktok_web&cookie_enabled=true&count=30&device_id=7106463322559923714&device_platform=web_pc&focus_state=true&from_page=video&history_len=1&insertedItemID=" + video_id + "&is_fullscreen=true&is_page_visible=true&os=mac&priority_region=&referer=&region=DE&screen_height=1920&screen_width=1080&tz_name=Asia%2FShanghai&webcast_language=es&msToken=" + self.ms_token
+        url = 'https://www.tiktok.com/api/recommend/item_list/?aid=1988&count=30&insertedItemID='+ video_id + "&msToken=" + self.ms_token
+        # url = "https://www.tiktok.com/api/recommend/item_list/?aid=1988&app_language=es&app_name=tiktok_web&battery_info=0.44&browser_language=zh-CN&browser_name=Mozilla&browser_online=true&browser_platform=MacIntel&browser_version=5.0%20%28Macintosh%3B%20Intel%20Mac%20OS%20X%2010_15_7%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F104.0.0.0%20Safari%2F537.36&channel=tiktok_web&cookie_enabled=true&count=30&device_id=7106463322559923714&device_platform=web_pc&focus_state=true&from_page=video&history_len=1&insertedItemID=" + video_id + "&is_fullscreen=true&is_page_visible=true&os=mac&priority_region=&referer=&region=DE&screen_height=1920&screen_width=1080&tz_name=Asia%2FShanghai&webcast_language=es&msToken=" + self.ms_token
         response = self.requester.get(url=url, allow_redirects=False)
         if response.http_status not in [HttpResponseStatus.Success, HttpResponseStatus.Redirects]:
             return network_error_rsp
@@ -253,17 +259,18 @@ class PlayCountCrawler(QObject):
 
     def www_tiktok_com(self, url: str):
         network_error_rsp: dict = {
-                "Url": url,
-                "Status": VideoResponseStatus.NetWorkError,
-                "VideoId": None,
-                "Share": None,
-                "Played": None,
-                "Digg": None,
-                "Comment": None,
-            }
+            "Url": url,
+            "Status": VideoResponseStatus.NetWorkError,
+            "VideoId": None,
+            "Share": None,
+            "Played": None,
+            "Digg": None,
+            "Comment": None,
+        }
         video_id = self.get_tiktok_video_id(url)
-        url = "https://www.tiktok.com/api/recommend/item_list/?aid=1988&app_language=es&app_name=tiktok_web&battery_info=0.44&browser_language=zh-CN&browser_name=Mozilla&browser_online=true&browser_platform=MacIntel&browser_version=5.0%20%28Macintosh%3B%20Intel%20Mac%20OS%20X%2010_15_7%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F104.0.0.0%20Safari%2F537.36&channel=tiktok_web&cookie_enabled=true&count=30&device_id=7106463322559923714&device_platform=web_pc&focus_state=true&from_page=video&history_len=1&insertedItemID=" + video_id + "&is_fullscreen=true&is_page_visible=true&os=mac&priority_region=&referer=&region=DE&screen_height=1920&screen_width=1080&tz_name=Asia%2FShanghai&webcast_language=es&msToken=" + self.ms_token
-        response = self.requester.get(url=url,allow_redirects=False)
+        url = 'https://www.tiktok.com/api/recommend/item_list/?aid=1988&count=30&insertedItemID=' + video_id + "&msToken=" + self.ms_token
+        # url = "https://www.tiktok.com/api/recommend/item_list/?aid=1988&app_language=es&app_name=tiktok_web&battery_info=0.44&browser_language=zh-CN&browser_name=Mozilla&browser_online=true&browser_platform=MacIntel&browser_version=5.0%20%28Macintosh%3B%20Intel%20Mac%20OS%20X%2010_15_7%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F104.0.0.0%20Safari%2F537.36&channel=tiktok_web&cookie_enabled=true&count=30&device_id=7106463322559923714&device_platform=web_pc&focus_state=true&from_page=video&history_len=1&insertedItemID=" + video_id + "&is_fullscreen=true&is_page_visible=true&os=mac&priority_region=&referer=&region=DE&screen_height=1920&screen_width=1080&tz_name=Asia%2FShanghai&webcast_language=es&msToken=" + self.ms_token
+        response = self.requester.get(url=url, allow_redirects=False)
         if response.http_status not in [HttpResponseStatus.Success, HttpResponseStatus.Redirects]:
             return network_error_rsp
         rsp_json = json.loads(response.content)
@@ -272,6 +279,51 @@ class PlayCountCrawler(QObject):
 
     def www_tiktok_com_t(self, url: str):
         return self.vm_tiktok_com(url)
+
+    def kuai_video_com(self, url):
+        error_rsp: dict = {
+            "Url": url,
+            "VideoId": None,
+            "Share": None,
+            "Played": None,
+            "Digg": None,
+            "Comment": None,
+        }
+        response = self.requester.get(url=url, allow_redirects=True)
+        if response.http_status not in [HttpResponseStatus.Success, HttpResponseStatus.Redirects]:
+            error_rsp["Status"] = VideoResponseStatus.NetWorkError
+            return error_rsp
+        soup = BeautifulSoup(response.content, 'lxml')
+        meta_info = self.found_meta(soup)
+        if meta_info is None:
+            error_rsp["Status"] = VideoResponseStatus.MetaNotFound
+            return error_rsp
+        url = "https://m.kwai.com/rest/o/w/photo/getUserHotPhoto?kpn=KWAI"
+        response = self.requester.post(url=url, json=meta_info)
+        if response.http_status != HttpResponseStatus.Success:
+            error_rsp["Status"] = VideoResponseStatus.NetWorkError
+            return error_rsp
+        rsp_json = json.loads(response.content)
+        self.logger.log_message("DEBUG", f"{rsp_json}")
+        for data in rsp_json["datas"]:
+            if data["photoId"] == meta_info["photoId"] and data["userId"] == meta_info["authorId"]:
+                return {
+                    "Status": VideoResponseStatus.Success,
+                    "VideoId": data["photoId"],
+                    "Share": None,
+                    "Played": data["viewCount"],
+                    "Digg": data["likeCount"],
+                    "Comment": data["commentCount"],
+                }
+        return {
+            "Status": VideoResponseStatus.LoseEfficacy,
+            "Url": url,
+            "VideoId": None,
+            "Share": None,
+            "Played": None,
+            "Digg": None,
+            "Comment": None,
+        }
 
     @staticmethod
     def get_tiktok_video_id(url: str) -> str:
@@ -326,3 +378,21 @@ class PlayCountCrawler(QObject):
                 "Digg": None,
                 "Comment": None,
             }
+
+    @staticmethod
+    def found_meta(soup):
+        soup.findAll(name="meta")
+        metas = soup.findAll(name="meta")
+        for meta in metas:
+            if meta.get("property") == "og:url":
+                url = meta.get("content")
+                url = url[25:]
+                step_index = url.find("/")
+                end_index = url.find("?")
+                user_id = url[0: step_index]
+                photo_id = url[step_index + 1: end_index]
+                return {
+                    "authorId": user_id,
+                    "photoId": photo_id,
+                }
+        return None

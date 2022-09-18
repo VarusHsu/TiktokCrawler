@@ -48,6 +48,7 @@ class VideoResponseStatus(Enum):
     BadUrlOrNoImplement = 3
     NetWorkError = 4
     ApiDataFormatError = 5
+    MetaNotFound = 6
 
 
 class GetHashtagInfoStatus(Enum):
