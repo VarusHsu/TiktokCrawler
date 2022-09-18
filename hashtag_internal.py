@@ -213,7 +213,7 @@ class Hashtag(QObject):
                                 "HashtagName": hashtag_info.name,
                                 "HashtagVideoCount": hashtag_info.video_count,
                                 "HashtagViewCount": hashtag_info.view_count,
-                                "UserNickname": video["author"]["nickname"],
+                                "UserNickname": video["author"]["uniqueId"],
                                 "UserSignature": video["author"]["signature"],
                                 "UserHomePage": f'https://www.tiktok.com/@{video["author"]["uniqueId"]}',
                                 "UserDiggCount": video["authorStats"]["diggCount"],
