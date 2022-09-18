@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import sys
 import time
 from threading import Thread
@@ -18,6 +19,7 @@ from requester import Requester
 from signals import UpdateUISignals, AdjustConfigSignals
 from xlsx_worker import XlsxWorker, init_writer, init_remove_dup_reader
 from enums import GetHashtagInfoStatus, HttpResponseStatus
+from util import merge_array
 
 
 class HashtagInfoResponse:
@@ -173,7 +175,7 @@ class Hashtag(QObject):
             self.logger.log_message("BEGIN", "Crawl start")
             fields = ("HashtagName", "HashtagVideoCount", "HashtagViewCount", "UserNickname", "UserSignature", "UserHomePage",
                       "UserDiggCount", "UserFollowerCount", "UserHeartCount", "UserVideoCount", "VideoPage", "VideoDiggCount", "VideoPlayCount",
-                      "VideoShareCount", "VideoCommentCount", "VideoCreateTime", "VideoDescription")
+                      "VideoShareCount", "VideoCommentCount", "VideoCreateTime", "VideoDescription", "Email")
             filename = self.get_abs_output_filename()
             self.xlsx_writer = init_writer(path=filename, fields=fields)
             self.download_contacted_excel()
@@ -225,6 +227,7 @@ class Hashtag(QObject):
                                 "VideoCommentCount": video["stats"]["commentCount"],
                                 "VideoCreateTime": self.timestamp_format(video["createTime"]),
                                 "VideoDescription": video["desc"],
+                                "Email": self.get_email(video["author"]["signature"])
                             }
                             video_ids = video_ids + video["id"]
                             if "@" in data.get("UserSignature"):
@@ -248,7 +251,7 @@ class Hashtag(QObject):
             self.logger.log_message("COMPLETE", "Crawl complete.")
             self.logger.log_message("SUMMERY", f"Visit videos: {video_count}.")
             self.logger.log_message("SUMMERY", f"Get users: {user_count}.")
-            self.logger.log_message("SUMMERY", f"Time cost: {time_during/1000} s.")
+            self.logger.log_message("SUMMERY", f"Time cost: {time_during / 1000} s.")
 
         crawl_thread: Thread = Thread(target=run)
         crawl_thread.start()
@@ -293,8 +296,19 @@ class Hashtag(QObject):
         try:
             response = requests.get(self.contacted_xlsx_url)
             self.logger.log_message("CRAWL", "Get remove duplication success.")
-            with open(default_path+ "cache.xlsx", "wb")as p:
+            with open(default_path + "cache.xlsx", "wb") as p:
                 p.write(response.content)
         except Exception as e:
             self.logger.log_message("ERROR", f"Get remove duplication xlsx error: {e}")
 
+    @staticmethod
+    def get_email(signature: str):
+        pattern = "^\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$"
+        res = []
+        chips = signature.split(" ")
+        for chip in chips:
+            merge_array(res, chip.split("\n"))
+        for value in res:
+            if re.match(pattern, value):
+                return value
+        return ""
