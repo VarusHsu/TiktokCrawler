@@ -304,7 +304,16 @@ class PlayCountCrawler(QObject):
             error_rsp["Status"] = VideoResponseStatus.NetWorkError
             return error_rsp
         rsp_json = json.loads(response.content)
-        self.logger.log_message("DEBUG", f"{rsp_json}")
+        if rsp_json.get("result") == 1016001002:
+            return {
+                "Status": VideoResponseStatus.LoseEfficacy,
+                "Url": url,
+                "VideoId": None,
+                "Share": None,
+                "Played": None,
+                "Digg": None,
+                "Comment": None,
+            }
         for data in rsp_json["datas"]:
             if data["photoId"] == meta_info["photoId"] and data["userId"] == meta_info["authorId"]:
                 return {
