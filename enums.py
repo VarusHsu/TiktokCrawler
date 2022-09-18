@@ -15,6 +15,7 @@ class XlsxWorkerStatus(Enum):
     Invalid = 0
     Reader = 1
     Writer = 2
+    RemoveDupReader = 3
 
 
 class XlsxReadStatus(Enum):

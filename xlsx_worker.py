@@ -6,6 +6,8 @@ from openpyxl.utils.exceptions import InvalidFileException
 from openpyxl.worksheet.worksheet import Worksheet
 
 from enums import XlsxWorkerStatus, XlsxReadStatus, XlsxWriteStatus, VideoResponseStatus
+from generate_path import default_path
+from util import merge_array
 
 
 class ReadResult:
@@ -63,6 +65,58 @@ class XlsxWorker:
             row += 1
             self.total_rows += 1
 
+    @staticmethod
+    def __get_link_unique(column: int, sheet: Worksheet) -> []:
+        res = []
+        rows = 3
+        while True:
+            if sheet.cell(rows, column).value is None:
+                return res
+            start = sheet.cell(rows, column).value.find("@") + 1
+            unique_id = sheet.cell(rows, column).value[start:]
+            if unique_id.find("?") != -1:
+                unique_id = unique_id[0:unique_id.find("?")]
+            if unique_id not in res:
+                res.append(unique_id)
+            rows += 1
+
+    @staticmethod
+    def __get_unique_id(column: int, sheet: Worksheet) -> []:
+        res = []
+        rows = 3
+        while True:
+            if sheet.cell(rows, column).value is None:
+                return res
+            unique_id = sheet.cell(rows, column).value
+            if unique_id not in res:
+                res.append(unique_id)
+            rows += 1
+
+    def read_unique_id(self) -> []:
+        res = []
+        if self.status != XlsxWorkerStatus.RemoveDupReader:
+            return None
+        ws = self.wb.worksheets[1]
+        res = merge_array(res, self.__get_unique_id(2, ws))
+        res = merge_array(res, self.__get_unique_id(11, ws))
+        res = merge_array(res, self.__get_link_unique(3, ws))
+        res = merge_array(res, self.__get_link_unique(12, ws))
+        ws = self.wb.worksheets[2]
+        res = merge_array(res, self.__get_unique_id(2, ws))
+        res = merge_array(res, self.__get_unique_id(12, ws))
+        res = merge_array(res, self.__get_unique_id(20, ws))
+        res = merge_array(res, self.__get_link_unique(3, ws))
+        res = merge_array(res, self.__get_link_unique(13, ws))
+        res = merge_array(res, self.__get_link_unique(21, ws))
+        ws =self.wb.worksheets[3]
+        res = merge_array(res, self.__get_unique_id(2, ws))
+        res = merge_array(res, self.__get_link_unique(3, ws))
+
+        for i in range(4, 10):
+            ws =self.wb.worksheets[i]
+            res = merge_array(res, self.__get_unique_id(1, ws))
+        return res
+
 
 def init_reader(path: str) -> 'XlsxWorker | None':
     instance = XlsxWorker()
@@ -92,3 +146,12 @@ def init_writer(path: str, fields: tuple) -> XlsxWorker:
     instance.cur_line = 2
     return instance
 
+
+def init_remove_dup_reader() -> 'XlsxWorker | None':
+    instance = XlsxWorker()
+    instance.status = XlsxWorkerStatus.RemoveDupReader
+    try:
+        instance.wb = openpyxl.open(filename=default_path + "cache.xlsx")
+    except InvalidFileException:
+        return None
+    return instance
