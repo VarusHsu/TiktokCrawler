@@ -194,8 +194,7 @@ class Hashtag(QObject):
                         rsp = json.loads(response.content)
                         has_more = rsp["hasMore"]
                         self.logger.log_message("CRAWL", f"Has more: {has_more}.")
-                        if rsp.get("itemList") is None or len(rsp.get("itemList")) == 0 or not has_more:
-                            # todo has_more 的判断放在写入表格之后
+                        if rsp.get("itemList") is None or len(rsp.get("itemList")) == 0:
                             break
                         for video in rsp["itemList"]:
                             self.reporter.self_increase("VideoCounter")
@@ -230,7 +229,8 @@ class Hashtag(QObject):
                             break
                         else:
                             self.remove_duplication_page.append(video_ids)
-
+                        if not has_more:
+                            break
             video_count = self.reporter.get_counter("VideoCounter")
             user_count = self.reporter.get_counter("UserCounter")
             time_during = self.reporter.get_during()
