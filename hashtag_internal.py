@@ -16,7 +16,7 @@ from logger import Logger
 from reporter import Reporter
 from requester import Requester
 from signals import UpdateUISignals, AdjustConfigSignals
-from xlsx_worker import XlsxWorker, init_writer
+from xlsx_worker import XlsxWorker, init_writer, init_remove_dup_reader
 from enums import GetHashtagInfoStatus, HttpResponseStatus
 
 
@@ -42,6 +42,7 @@ class Hashtag(QObject):
     logger: Logger
     xlsx_reader: XlsxWorker = None
     xlsx_writer: XlsxWorker = None
+    remove_dup_reader: XlsxWorker = None
 
     # ui_widget
     app: QApplication
@@ -169,12 +170,20 @@ class Hashtag(QObject):
             self.reporter.init_counter("VideoCounter")
             self.reporter.init_counter("UserCounter")
             self.reporter.set_timer()
+            self.logger.log_message("BEGIN", "Crawl start")
             fields = ("HashtagName", "HashtagVideoCount", "HashtagViewCount", "UserNickname", "UserSignature", "UserHomePage",
                       "UserDiggCount", "UserFollowerCount", "UserHeartCount", "UserVideoCount", "VideoPage", "VideoDiggCount", "VideoPlayCount",
                       "VideoShareCount", "VideoCommentCount", "VideoCreateTime", "VideoDescription")
             filename = self.get_abs_output_filename()
             self.xlsx_writer = init_writer(path=filename, fields=fields)
-            self.logger.log_message("BEGIN", "Crawl start")
+            self.download_contacted_excel()
+            self.remove_dup_reader = init_remove_dup_reader()
+            if self.remove_dup_reader is None:
+                self.logger.log_message("ERROR", "Initial remove duplication xlsx error.")
+            else:
+                self.remove_duplication_author = self.remove_dup_reader.read_unique_id()
+                os.remove(default_path + "cache.xlsx")
+                self.logger.log_message("CRAWL", "Initial remove duplication xlsx success.")
             for hashtag in self.task_list:
                 hashtag_info = self.get_hashtag_info(hashtag)
                 if hashtag_info.status == GetHashtagInfoStatus.NetworkError:
@@ -279,15 +288,6 @@ class Hashtag(QObject):
                                    rsp_json["challengeInfo"]["challenge"]["stats"]["videoCount"],
                                    rsp_json["challengeInfo"]["challenge"]["stats"]["viewCount"],
                                    rsp_json["challengeInfo"]["challenge"]["id"])
-
-    @staticmethod
-    def compare_array(a: [], b: []):
-        if len(a) != len(b):
-            return False
-        for i in range(0, len(a)):
-            if a[i] != b[i]:
-                return False
-        return True
 
     def download_contacted_excel(self):
         try:
