@@ -70,14 +70,15 @@ class XlsxWorker:
         res = []
         rows = 3
         while True:
-            if sheet.cell(rows, column).value is None:
+            if sheet.max_row == rows:
                 return res
-            start = sheet.cell(rows, column).value.find("@") + 1
-            unique_id = sheet.cell(rows, column).value[start:]
-            if unique_id.find("?") != -1:
-                unique_id = unique_id[0:unique_id.find("?")]
-            if unique_id not in res:
-                res.append(unique_id)
+            elif sheet.cell(rows, column).value is not None:
+                start = sheet.cell(rows, column).value.find("@") + 1
+                unique_id = sheet.cell(rows, column).value[start:]
+                if unique_id.find("?") != -1:
+                    unique_id = unique_id[0:unique_id.find("?")]
+                if unique_id not in res:
+                    res.append(unique_id)
             rows += 1
 
     @staticmethod
@@ -85,11 +86,12 @@ class XlsxWorker:
         res = []
         rows = 3
         while True:
-            if sheet.cell(rows, column).value is None:
+            if sheet.max_row == rows:
                 return res
-            unique_id = sheet.cell(rows, column).value
-            if unique_id not in res:
-                res.append(unique_id)
+            elif sheet.cell(rows, column).value is not None:
+                unique_id = sheet.cell(rows, column).value
+                if unique_id not in res:
+                    res.append(unique_id)
             rows += 1
 
     def read_unique_id(self) -> []:
@@ -115,6 +117,7 @@ class XlsxWorker:
         for i in range(4, 10):
             ws =self.wb.worksheets[i]
             res = merge_array(res, self.__get_unique_id(1, ws))
+            print(len(res))
         return res
 
 

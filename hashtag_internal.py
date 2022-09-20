@@ -159,6 +159,7 @@ class Hashtag(QObject):
         else:
             self.logger.log_message("ANALYSIS", "Analysis your input success.")
             self.logger.log_message("ANALYSIS", f"Result: {self.task_list}")
+            # todo 这里加一个去重
         pass
 
     def handle_crawl_button_clicked(self):
@@ -184,6 +185,7 @@ class Hashtag(QObject):
                 self.logger.log_message("ERROR", "Initial remove duplication xlsx error.")
             else:
                 self.remove_duplication_author = self.remove_dup_reader.read_unique_id()
+                self.logger.log_message("DEBUG", f"{self.remove_duplication_author}")
                 os.remove(default_path + "cache.xlsx")
                 self.logger.log_message("CRAWL", "Initial remove duplication xlsx success.")
             for hashtag in self.task_list:
