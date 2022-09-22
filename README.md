@@ -11,6 +11,10 @@
 ```shell
   make play_count
 ```
+* 定时任务播放量客户端
+```shell
+  make client 
+```
 * hashtag爬虫打包命令
 ```shell
   make hashtag

@@ -14,5 +14,10 @@ run_play_count:
 run_hashtag:
 	./set_default_path.sh \
 	&&python3 ./user_by_hashtag.py
+run_client:
+	python3 ./play_count_client.py
 path:
 	./set_default_path.sh
+client:
+	py2applet --make-setup play_count_client.py \
+	&&python3 setup.py py2app
