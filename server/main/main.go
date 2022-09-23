@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -33,6 +34,7 @@ func main() {
 	r.GET("/ping", handleGetPing)
 	r.GET("/list_history_by_time", handleGetListHistoryByTime)
 	r.GET("/list_history_by_increase", handleGetListHistoryByIncrease)
+	r.GET("/download", handleGetDownload)
 
 	err := r.Run()
 	if err != nil {
@@ -120,4 +122,34 @@ func getList(listType ListType) []string {
 		return nil
 	}
 	return files
+}
+
+func handleGetDownload(context *gin.Context) {
+	listTypeInt, err := strconv.Atoi(context.Query("list_type"))
+	if err != nil {
+		content := fmt.Sprintf("Get download atoi error %s", err)
+		logger.LogMessage("ERROR", content)
+		return
+	}
+	listType := ListType(listTypeInt)
+	fileName := context.Query("filename")
+	var path string
+	switch listType {
+	case ListTypeByTime:
+		path = "./history/by_time/"
+	case ListTypeByIncrease:
+		path = "./history/by_increase/"
+	default:
+		logger.LogMessage("ERROR", "Get download unknown list type")
+		context.JSON(http.StatusBadRequest, "Bad Request")
+		return
+	}
+	fullPath := path + fileName
+	_, err = os.Stat(fullPath)
+	if err != nil {
+		context.JSON(http.StatusNotFound, "No Such file")
+		return
+	}
+	context.File(fullPath)
+	return
 }
