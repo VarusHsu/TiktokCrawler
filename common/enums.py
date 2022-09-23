@@ -56,3 +56,9 @@ class GetHashtagInfoStatus(Enum):
     Success = 1
     NetworkError = 2
     NoSuchHashtag = 3
+
+
+class ListType(Enum):
+    Invalid = 0
+    ByTime = 1
+    ByIncrease = 2

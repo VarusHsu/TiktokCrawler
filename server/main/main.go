@@ -151,5 +151,6 @@ func handleGetDownload(context *gin.Context) {
 		return
 	}
 	context.File(fullPath)
+	logger.LogMessage("SERVER", "Interface: GetDownload.")
 	return
 }
