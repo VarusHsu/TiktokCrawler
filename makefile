@@ -23,3 +23,6 @@ generate-client:
 	./script/set_default_path.sh \
 	&&py2applet --make-setup ./client/main.py \
   	&&python3 setup.py py2app
+serve:
+	cd server&& \
+	go run ./main/main.go
