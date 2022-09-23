@@ -2,9 +2,9 @@ import time
 
 import requests
 from requests.exceptions import MissingSchema, SSLError
-from enums import HttpResponseStatus
+from common.enums import HttpResponseStatus
 
-from logger import Logger
+from common.logger import Logger
 
 
 class HttpResponse:

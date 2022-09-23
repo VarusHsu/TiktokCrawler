@@ -1,8 +1,8 @@
 from PyQt6.QtCore import QObject
 from PyQt6.QtWidgets import QLabel, QCheckBox, QFileDialog, QPushButton, QLineEdit, QWidget
 
-from logger import Logger
-from signals import UpdateUISignals, AdjustConfigSignals
+from common.logger import Logger
+from common.signals import UpdateUISignals, AdjustConfigSignals
 
 
 class ConfigWindows(QObject):

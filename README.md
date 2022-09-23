@@ -9,23 +9,23 @@
 ```
 * 播放量爬虫打包命令
 ```shell
-  make play_count
+  make generate-play-count
 ```
 * 定时任务播放量客户端
 ```shell
-  make client 
+  make generate-client 
 ```
 * hashtag爬虫打包命令
 ```shell
-  make hashtag
+  make generate-hashtag
 ```
 * 播放量爬虫运行命令
 ```shell
-  make run_play_count
+  make run-play-count
 ```
 * hashtag爬虫运行命令
 ```shell
-  make run_hashtag
+  make run-hashtag
 ```
 * 清除已经打的包以及打包缓存
 ```shell

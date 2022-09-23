@@ -10,16 +10,16 @@ from PyQt6 import QtCore
 from PyQt6.QtCore import QObject
 from PyQt6.QtWidgets import QApplication, QWidget, QListWidget, QPushButton, QFileDialog
 
-from config_windows import ConfigWindows
-from feishu import Feishu
-from generate_path import default_path
-from logger import Logger
-from reporter import Reporter
-from requester import Requester
-from signals import UpdateUISignals, AdjustConfigSignals
-from xlsx_worker import XlsxWorker, init_writer, init_remove_dup_reader
-from enums import GetHashtagInfoStatus, HttpResponseStatus
-from util import merge_array
+from common.config_windows import ConfigWindows
+from common.feishu import Feishu
+from generate.generate_path import default_path
+from common.logger import Logger
+from common.reporter import Reporter
+from common.requester import Requester
+from common.signals import UpdateUISignals, AdjustConfigSignals
+from common.xlsx_worker import XlsxWorker, init_writer, init_remove_dup_reader
+from common.enums import GetHashtagInfoStatus, HttpResponseStatus
+from common.util import merge_array
 
 
 class HashtagInfoResponse:

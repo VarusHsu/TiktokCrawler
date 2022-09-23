@@ -9,16 +9,15 @@ from PyQt6.QtCore import QObject
 from PyQt6.QtWidgets import QApplication, QWidget, QListWidget, QPushButton, QProgressBar, QFileDialog
 from bs4 import BeautifulSoup
 
-from config_windows import ConfigWindows
-from feishu import Feishu
-from logger import Logger
-from reporter import Reporter
-from requester import Requester
-from signals import UpdateUISignals, AdjustConfigSignals
-from xlsx_worker import XlsxWorker, init_writer, init_reader
-from generate_path import default_path
-
-from enums import XlsxReadStatus, UrlType, VideoResponseStatus, HttpResponseStatus
+from common.config_windows import ConfigWindows
+from common.feishu import Feishu
+from common.logger import Logger
+from common.reporter import Reporter
+from common.requester import Requester
+from common.signals import UpdateUISignals,AdjustConfigSignals
+from common.xlsx_worker import XlsxWorker, init_writer, init_reader
+from generate.generate_path import default_path
+from common.enums import XlsxReadStatus, UrlType, VideoResponseStatus, HttpResponseStatus
 
 
 class PlayCountCrawler(QObject):

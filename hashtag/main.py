@@ -1,8 +1,11 @@
-import hashtag_internal
+import sys
+
+sys.path.append(".")
+import internal
 
 
 def main():
-    app = hashtag_internal.Hashtag()
+    app = internal.Hashtag()
     app.render()
     pass
 

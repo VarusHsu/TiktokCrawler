@@ -5,9 +5,9 @@ from openpyxl import Workbook
 from openpyxl.utils.exceptions import InvalidFileException
 from openpyxl.worksheet.worksheet import Worksheet
 
-from enums import XlsxWorkerStatus, XlsxReadStatus, XlsxWriteStatus, VideoResponseStatus
-from generate_path import default_path
-from util import merge_array
+from common.enums import XlsxWorkerStatus, XlsxReadStatus, XlsxWriteStatus, VideoResponseStatus
+from generate.generate_path import default_path
+from common.util import merge_array
 
 
 class ReadResult:

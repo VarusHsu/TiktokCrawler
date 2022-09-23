@@ -2,7 +2,7 @@ from threading import Thread
 
 from PyQt6.QtCore import QObject
 
-import feishu
+from common import feishu
 
 
 class Logger:
