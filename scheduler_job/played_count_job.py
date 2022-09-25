@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 import time
 
@@ -57,6 +58,7 @@ def run():
             res["Url"] = url
             xlsx_writer.writer_line(res)
     time.sleep(3)
+    os.system(f"cp {filename} /home/ubuntu/TiktokCrawler/server/history/compare_cache/{get_filename()}.")
     during = reporter.get_during()
     logger.log_message("SUMMERY", f"Cost {during / 1000} s")
     logger.log_message("COMPLETE", "Complete.")
@@ -64,6 +66,10 @@ def run():
 
 def get_abs_output_filename() -> str:
     return default_path + time.strftime("%Y-%m-%d_%H:%M:%S.xlsx", time.localtime())
+
+
+def get_filename() -> str:
+    return time.strftime("%Y-%m-%d.xlsx", time.localtime())
 
 
 def get_url_type(url: str):

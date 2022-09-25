@@ -176,10 +176,15 @@ class PlayCountClient(QObject):
         self.log_box.move(20, 20)
         self.log_box.resize(710, 361)
         self.log_box.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.update_ui_signals.log_signal.connect(self.handle_log_signal)
 
         self.windows.show()
         sys.exit(self.app.exec())
         pass
+
+    def handle_log_signal(self, message: str):
+        self.log_box.addItem(message)
+        self.log_box.verticalScrollBar().setValue(self.log_box.verticalScrollBar().maximum())
 
     def handle_download_by_time_button_click(self):
         self.download_windows = DownloadWindows(ListType.ByTime, self.requester)
