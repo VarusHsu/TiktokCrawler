@@ -1,9 +1,10 @@
+import json
 import sys
 
 import requests
 from PyQt6 import QtCore
 from PyQt6.QtCore import QObject
-from PyQt6.QtWidgets import QApplication, QWidget, QListWidget, QPushButton, QFileDialog
+from PyQt6.QtWidgets import QApplication, QWidget, QListWidget, QPushButton, QFileDialog, QMessageBox
 
 sys.path.append(".")
 
@@ -19,27 +20,51 @@ from common.config_reader import ConfigReader
 
 
 class DownloadWindows(QObject):
-
     windows: QWidget
     log_box: QListWidget
-    items: []
+    item_list_widget: QListWidget
+    message_box: QMessageBox
 
+    items: []
     list_type: ListType
+    config_reader: ConfigReader
     requester: Requester
 
     def __init__(self, list_type: ListType, requester: Requester):
         super().__init__()
         self.list_type = list_type
         self.requester = requester
+        self.config_reader = ConfigReader()
+        self.config_reader.read_config()
 
     def render(self):
         self.windows = QWidget()
         if self.list_type == ListType.ByTime:
             self.windows.setWindowTitle("Download By Time")
+            url = self.config_reader.server_url + "/list_history_by_time"
         else:
             self.windows.setWindowTitle("Download By Increase")
+            url = self.config_reader.server_url + "/list_history_by_increase"
+        try:
+            rsp = self.requester.get(url, allow_redirects=True)
+        except Exception as e:
+            self.message_box = QMessageBox(self.windows)
+            self.message_box.setText(str(e))
+            return
+        self.item_list_widget = QListWidget(self.windows)
+        print(url)
+        print(rsp.content)
+        print(rsp.http_status)
+        rsp = json.loads(rsp.content)
+        self.items = rsp["items"]
+        for item in self.items:
+            self.item_list_widget.addItem(item)
         self.windows.resize(500, 314)
         self.windows.setFixedSize(500, 314)
+
+        self.item_list_widget.move(20, 20)
+        self.item_list_widget.resize(460, 254)
+        self.windows.show()
 
         pass
 
