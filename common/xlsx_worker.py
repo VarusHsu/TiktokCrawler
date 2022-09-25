@@ -158,3 +158,11 @@ def init_remove_dup_reader() -> 'XlsxWorker | None':
     except InvalidFileException:
         return None
     return instance
+
+
+def verify_xlsx_format(path: str) -> bool:
+    try:
+        openpyxl.open(filename=path)
+    except InvalidFileException:
+        return False
+    return True

@@ -1,4 +1,4 @@
-from play_count_client_internal import PlayCountClient
+from internal import PlayCountClient
 
 
 def main():

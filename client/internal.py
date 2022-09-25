@@ -1,8 +1,11 @@
 import sys
 
+import requests
 from PyQt6 import QtCore
 from PyQt6.QtCore import QObject
 from PyQt6.QtWidgets import QApplication, QWidget, QListWidget, QPushButton, QFileDialog
+
+sys.path.append(".")
 
 from common.feishu import Feishu
 from generate.generate_path import default_path
@@ -10,7 +13,9 @@ from common.logger import Logger
 from common.reporter import Reporter
 from common.requester import Requester
 from common.signals import UpdateUISignals, AdjustConfigSignals
-from common.enums import ListType
+from common.enums import ListType, HttpResponseStatus
+from common.xlsx_worker import verify_xlsx_format
+from common.config_reader import ConfigReader
 
 
 class DownloadWindows(QObject):
@@ -44,6 +49,7 @@ class PlayCountClient(QObject):
     reporter: Reporter
     requester: Requester
     logger: Logger
+    config_reader: ConfigReader
 
     # ui_widget
     app: QApplication
@@ -82,6 +88,8 @@ class PlayCountClient(QObject):
         self.logger = Logger(lark_sender=self.feishu, signals_sender=self.update_ui_signals)
         self.requester = Requester(logger=self.logger)
         self.reporter = Reporter()
+        self.config_reader = ConfigReader()
+        self.config_reader.read_config()
 
     def render(self):
         self.app = QApplication(sys.argv)
@@ -94,6 +102,7 @@ class PlayCountClient(QObject):
         self.upload_button.setText("Update Data Source")
         self.upload_button.setFixedWidth(150)
         self.upload_button.move(20, 385)
+        self.upload_button.clicked.connect(self.handle_upload_button_click)
 
         self.download_by_time_button = QPushButton(self.windows)
         self.download_by_time_button.setText("Download By Time")
@@ -130,3 +139,24 @@ class PlayCountClient(QObject):
     def handle_download_by_increase_button_click(self):
         self.download_windows = DownloadWindows(ListType.ByIncrease, self.requester)
         self.download_windows.render()
+
+    def handle_upload_button_click(self):
+        self.import_file_dialog = QFileDialog(self.windows)
+        filename = self.import_file_dialog.getOpenFileNames()[0]
+        if len(filename) == 0:
+            self.logger.log_message("UPLOAD", "Cancel")
+            return
+        else:
+            filename = filename[0]
+        is_xlsx = verify_xlsx_format(filename)
+        if not is_xlsx:
+            self.logger.log_message("ERROR", f"File '{filename}' may not a xlsx file.")
+            return
+        files = {"file": open(file=f"{filename}", mode="rb")}
+        url = self.config_reader.server_url
+        response = self.requester.post(url=f"{url}/upload", files=files, json={})
+        if response.http_status == HttpResponseStatus.Success:
+            self.logger.log_message("SUCCESS", "Upload source file success.")
+        else:
+            self.logger.log_message("ERROR", "Upload source file failed.")
+        pass

@@ -12,5 +12,5 @@ class ConfigReader:
             self.config = yaml.load(c.read(), Loader=yaml.Loader)
         self.server_port = self.config["server_port"]
         self.server_ip = self.config["server_address"]
-        self.server_url = self.server_ip + ":" + str(self.server_port)
+        self.server_url ="http://" + self.server_ip + ":" + str(self.server_port)
     pass

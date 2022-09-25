@@ -53,9 +53,9 @@ class Requester:
                 self.logger.log_message("GET", f"{response.status_code}: {url}.")
                 return HttpResponse(HttpResponseStatus.Invalid, response.content)
 
-    def post(self, url: str, json: dict, timeout: int = 60):
+    def post(self, url: str, json: dict, files: dict = None, timeout: int = 60):
         try:
-            response = requests.post(url=url, json=json, headers=self.headers, timeout=timeout)
+            response = requests.post(url=url, json=json, files=files, headers=self.headers, timeout=timeout)
         except MissingSchema:
             self.logger.log_message("ERROR", f"Invalid URL '{url}', perhaps you meant 'https://{url}'.")
             return HttpResponse(HttpResponseStatus.MissingSchema, None)
