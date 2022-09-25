@@ -1,7 +1,10 @@
 import json
+import sys
 import time
 
 from bs4 import BeautifulSoup
+
+sys.path.append(".")
 
 from generate import generate_path
 from common.xlsx_worker import init_writer, init_reader
