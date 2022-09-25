@@ -63,3 +63,14 @@ class ListType(Enum):
     Invalid = 0
     ByTime = 1
     ByIncrease = 2
+
+
+class XlsxCompareResult:
+    Invalid = 0
+    Uncompleted = 1
+    YesterdayNotFound = 2
+    TodayNotFound = 3
+    YesterdayStatusException = 4
+    TodayStatusException = 5
+    BothTwoDaysException = 6
+    Success = 7

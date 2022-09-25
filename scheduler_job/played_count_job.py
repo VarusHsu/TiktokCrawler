@@ -1,3 +1,4 @@
+import datetime
 import json
 import os
 import sys
@@ -69,7 +70,7 @@ def get_abs_output_filename() -> str:
 
 
 def get_filename() -> str:
-    return time.strftime("%Y-%m-%d.xlsx", time.localtime())
+    return str(datetime.date.today()) + ".xlsx"
 
 
 def get_url_type(url: str):

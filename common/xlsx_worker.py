@@ -5,7 +5,7 @@ from openpyxl import Workbook
 from openpyxl.utils.exceptions import InvalidFileException
 from openpyxl.worksheet.worksheet import Worksheet
 
-from common.enums import XlsxWorkerStatus, XlsxReadStatus, XlsxWriteStatus, VideoResponseStatus
+from common.enums import XlsxWorkerStatus, XlsxReadStatus, XlsxWriteStatus, VideoResponseStatus, XlsxCompareResult
 from generate.generate_path import default_path
 from common.util import merge_array
 
@@ -17,6 +17,11 @@ class ReadResult:
     def __init__(self, status: XlsxReadStatus, url: str):
         self.status = status
         self.url = url
+
+
+class ReadPlayedDataResult:
+    status: XlsxReadStatus
+    datas: dict
 
 
 class XlsxWorker:
@@ -48,7 +53,7 @@ class XlsxWorker:
             flag: bool = False
             for i in range(1, self.column_count + 1):
                 if self.ws.cell(1, i).value == key:
-                    if type(value[key]) is VideoResponseStatus:
+                    if type(value[key]) in [VideoResponseStatus, XlsxCompareResult]:
                         value[key] = str(value[key].name)
                     self.ws.cell(row=self.cur_line, column=i, value=value[key])
                     flag = True
@@ -64,6 +69,24 @@ class XlsxWorker:
         while self.ws.cell(row, 1).value is not None:
             row += 1
             self.total_rows += 1
+
+    def read_line(self) -> ReadPlayedDataResult:
+        value: str = self.ws.cell(self.cur_line, 1).value
+        if value is None:
+            res = ReadPlayedDataResult()
+            res.status = XlsxReadStatus.NoMoreData
+            res.datas = {}
+            return res
+        datas = {}
+        for column in range(1, 8):
+            field = self.ws.cell(1, column).value
+            value = self.ws.cell(self.cur_line, column).value
+            datas[field] = value
+        self.cur_line += 1
+        res = ReadPlayedDataResult()
+        res.status = XlsxReadStatus.Success
+        res.datas = datas
+        return res
 
     @staticmethod
     def __get_link_unique(column: int, sheet: Worksheet) -> []:
@@ -110,12 +133,12 @@ class XlsxWorker:
         res = merge_array(res, self.__get_link_unique(3, ws))
         res = merge_array(res, self.__get_link_unique(13, ws))
         res = merge_array(res, self.__get_link_unique(21, ws))
-        ws =self.wb.worksheets[3]
+        ws = self.wb.worksheets[3]
         res = merge_array(res, self.__get_unique_id(2, ws))
         res = merge_array(res, self.__get_link_unique(3, ws))
 
         for i in range(4, 10):
-            ws =self.wb.worksheets[i]
+            ws = self.wb.worksheets[i]
             res = merge_array(res, self.__get_unique_id(1, ws))
             print(len(res))
         return res
@@ -166,3 +189,69 @@ def verify_xlsx_format(path: str) -> bool:
     except InvalidFileException:
         return False
     return True
+
+
+def compare(yesterday: XlsxWorker, today: XlsxWorker, name: str):
+    writer = init_writer("/home/ubuntu/TiktokCrawler/server/history/by_increase/", ("Url", "Status", "VideoId", "Comment", "Share", "Played", "Digg",))
+    remove_duplication = []
+    while True:
+        yesterday_data = yesterday.read_line()
+        today.cur_line = 2
+        if yesterday_data.status == XlsxReadStatus.NoMoreData:
+            break
+        remove_duplication.append(yesterday_data.datas["Url"])
+        while True:
+            today_data = today.read_line()
+            if today_data.status == XlsxReadStatus.NoMoreData:
+                writer.writer_line({
+                    "Url": yesterday_data.datas["Url"],
+                    "Status": XlsxCompareResult.TodayNotFound,
+                    "VideoId": yesterday_data.datas["VideoId"],
+                })
+            elif today_data.datas["Url"] != yesterday_data.datas["Url"]:
+                continue
+            elif today_data.datas["Status"] != "Success" and yesterday_data.datas["Status"] != "Success":
+                writer.writer_line({
+                    "Url": yesterday_data.datas["Url"],
+                    "Status": XlsxCompareResult.BothTwoDaysException,
+                    "VideoId": yesterday_data.datas["VideoId"],
+                })
+            elif today_data.datas["Status"] != "Success":
+                writer.writer_line({
+                    "Url": yesterday_data.datas["Url"],
+                    "Status": XlsxCompareResult.TodayStatusException,
+                    "VideoId": yesterday_data.datas["VideoId"],
+                })
+            elif yesterday_data.datas["Status"] != "Success":
+                writer.writer_line({
+                    "Url": yesterday_data.datas["Url"],
+                    "Status": XlsxCompareResult.YesterdayStatusException,
+                    "VideoId": yesterday_data.datas["VideoId"],
+                })
+            else:
+                if type(yesterday_data.datas["Share"]) is None:
+                    share_compare = 0
+                else:
+                    share_compare = int(today_data.datas["Share"]) - int(yesterday_data.datas["Share"])
+                writer.writer_line({
+                    "Url": yesterday_data.datas["Url"],
+                    "Status": XlsxCompareResult.Success,
+                    "VideoId": yesterday_data.datas["VideoId"],
+                    "Share": share_compare,
+                    "Played": int(today_data.datas["Played"]) - int(yesterday_data.datas["Played"]),
+                    "Digg": int(today_data.datas["Digg"]) - int(yesterday_data.datas["Digg"]),
+                    "Comment": int(today_data.datas["Comment"]) - int(yesterday_data.datas["Comment"]),
+                })
+    today.cur_line = 2
+    while True:
+        data = today.read_line()
+        if data.status == XlsxReadStatus.NoMoreData:
+            break
+        elif data.datas["Url"] in remove_duplication:
+            continue
+        elif data.datas["Status"] == "Success":
+            writer.writer_line({
+                "Url": data.datas["Url"],
+                "Status": XlsxCompareResult.YesterdayNotFound,
+                "VideoId": data.datas["VideoId"],
+            })
