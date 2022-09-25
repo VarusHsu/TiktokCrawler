@@ -15,7 +15,8 @@ class Feishu:
         "Content-Type": "application/json; charset=utf-8"
     }
 
-    def __init__(self):
+    def __init__(self, robot_url="https://open.feishu.cn/open-apis/bot/v2/hook/8260d294-6983-419d-b071-fc462d36ea70"):
+        self.robot_url = robot_url
         super().__init__()
 
     def __get_tenant_access_token(self) -> str:

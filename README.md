@@ -35,7 +35,7 @@
 ```shell
   make path
 ```
-* 服务器上启动服务
+* 服务器上部署服务
 ```shell
   sudo nohup make serve &
 ```

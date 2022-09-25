@@ -9,7 +9,7 @@ class Logger:
     signals_sender: QObject
     lark_sender: feishu.Feishu
 
-    def __init__(self, signals_sender: QObject, lark_sender: feishu.Feishu):
+    def __init__(self, signals_sender: 'QObject| None', lark_sender: feishu.Feishu):
         self.lark_sender = lark_sender
         self.signals_sender = signals_sender
 
@@ -21,7 +21,8 @@ class Logger:
         send_lark_thread: Thread = Thread(target=run, args=(message, notice_email))
         send_lark_thread.start()
         message = self.__remove_illegal_byte(message)
-        self.signals_sender.log_signal.emit(message)
+        if self.signals_sender is not None:
+            self.signals_sender.log_signal.emit(message)
 
     @staticmethod
     def __remove_illegal_byte(text: str) -> str:
