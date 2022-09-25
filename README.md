@@ -35,3 +35,7 @@
 ```shell
   make path
 ```
+* 服务器上启动服务
+```shell
+sudo nohup make serve &
+```

@@ -55,7 +55,7 @@ func handlePostUpload(context *gin.Context) {
 		return
 	}
 	filename := headers.Filename
-	out, err := os.Create("./server/source/" + filename)
+	out, err := os.Create("/home/ubuntu/TiktokCrawler/server/source/" + filename)
 	if err != nil {
 		content := fmt.Sprintf("Create file error %s", err)
 		logger.LogMessage("ERROR", content)
