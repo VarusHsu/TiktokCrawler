@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"draft/logger"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -54,7 +55,7 @@ func handlePostUpload(context *gin.Context) {
 		return
 	}
 	filename := headers.Filename
-	out, err := os.Create(filename)
+	out, err := os.Create("./server/source/" + filename)
 	if err != nil {
 		content := fmt.Sprintf("Create file error %s", err)
 		logger.LogMessage("ERROR", content)
@@ -68,6 +69,7 @@ func handlePostUpload(context *gin.Context) {
 		return
 	}
 	logger.LogMessage("SERVER", "Interface: PostUpload")
+	setSourcePath(filename)
 	context.String(http.StatusCreated, "Upload Success")
 }
 
@@ -154,4 +156,25 @@ func handleGetDownload(context *gin.Context) {
 	context.File(fullPath)
 	logger.LogMessage("SERVER", "Interface: GetDownload.")
 	return
+}
+
+func setSourcePath(fileName string) {
+	filePath := "../../scheduler_job/source.py"
+	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		logger.LogMessage("ERROR", "Open file error.")
+	}
+	defer file.Close()
+	code := fmt.Sprintf("source_path = '/home/ubuntu/TiktokCrawler/server/source/%s'", fileName)
+	writer := bufio.NewWriter(file)
+	_, err = writer.WriteString(code)
+	if err != nil {
+		logger.LogMessage("ERROR", "Write source path error.")
+		return
+	}
+	err = writer.Flush()
+	if err != nil {
+		logger.LogMessage("ERROR", "Write source path flush error.")
+		return
+	}
 }
