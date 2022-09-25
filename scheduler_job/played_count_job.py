@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 
 sys.path.append(".")
 
-from generate import generate_path
+from generate.generate_path import default_path
 from common.xlsx_worker import init_writer, init_reader
 from source import source_path
 from common.logger import Logger
@@ -63,7 +63,7 @@ def run():
 
 
 def get_abs_output_filename() -> str:
-    return generate_path.default_path + time.strftime("%Y-%m-%d_%H:%M:%S.xlsx", time.localtime())
+    return default_path + time.strftime("%Y-%m-%d_%H:%M:%S.xlsx", time.localtime())
 
 
 def get_url_type(url: str):
