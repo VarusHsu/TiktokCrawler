@@ -10,3 +10,4 @@ requests==2.27.1
 requests-file==1.5.1
 requests-toolbelt==0.9.1
 urllib3==1.26.9
+pyyaml==6.0

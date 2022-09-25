@@ -75,6 +75,7 @@ func handleGetPing(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{
 		"message": "pong",
 	})
+	logger.LogMessage("SERVER", "Interface: GetPing.")
 }
 
 func handleGetListHistoryByTime(context *gin.Context) {
