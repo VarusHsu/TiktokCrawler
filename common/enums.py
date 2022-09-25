@@ -9,6 +9,7 @@ class HttpResponseStatus(Enum):
     Redirects = 4
     NoFound = 5
     Success = 6
+    Created = 7
 
 
 class XlsxWorkerStatus(Enum):

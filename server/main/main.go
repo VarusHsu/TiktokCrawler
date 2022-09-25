@@ -159,7 +159,7 @@ func handleGetDownload(context *gin.Context) {
 }
 
 func setSourcePath(fileName string) {
-	filePath := "../../scheduler_job/source.py"
+	filePath := "/home/ubuntu/TiktokCrawler/scheduler_job/source.py"
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		logger.LogMessage("ERROR", "Open file error.")

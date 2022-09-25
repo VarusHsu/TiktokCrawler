@@ -73,6 +73,9 @@ class Requester:
             if response.status_code == 200:
                 self.logger.log_message("POST", f"{response.status_code}: {url}.")
                 return HttpResponse(HttpResponseStatus.Success, response.content)
+            elif response.status_code == 201:
+                self.logger.log_message("POST", f"{response.status_code}: {url}.")
+                return HttpResponse(HttpResponseStatus.Created, response.content)
             elif response.status_code == 301:
                 return HttpResponse(HttpResponseStatus.Redirects, response.content)
             elif response.status_code == 404:

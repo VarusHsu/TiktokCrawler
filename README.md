@@ -37,5 +37,5 @@
 ```
 * 服务器上启动服务
 ```shell
-sudo nohup make serve &
+  sudo nohup make serve &
 ```

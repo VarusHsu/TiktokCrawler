@@ -155,7 +155,7 @@ class PlayCountClient(QObject):
         files = {"file": open(file=f"{filename}", mode="rb")}
         url = self.config_reader.server_url
         response = self.requester.post(url=f"{url}/upload", files=files, json={})
-        if response.http_status == HttpResponseStatus.Success:
+        if response.http_status == HttpResponseStatus.Created:
             self.logger.log_message("SUCCESS", "Upload source file success.")
         else:
             self.logger.log_message("ERROR", "Upload source file failed.")
