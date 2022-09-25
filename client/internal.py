@@ -1,7 +1,6 @@
 import json
 import sys
 
-import requests
 from PyQt6 import QtCore
 from PyQt6.QtCore import QObject
 from PyQt6.QtWidgets import QApplication, QWidget, QListWidget, QPushButton, QFileDialog, QMessageBox
@@ -24,11 +23,13 @@ class DownloadWindows(QObject):
     log_box: QListWidget
     item_list_widget: QListWidget
     message_box: QMessageBox
+    download_button: QPushButton
 
     items: []
     list_type: ListType
     config_reader: ConfigReader
     requester: Requester
+    filename: str
 
     def __init__(self, list_type: ListType, requester: Requester):
         super().__init__()
@@ -52,21 +53,46 @@ class DownloadWindows(QObject):
             self.message_box.setText(str(e))
             return
         self.item_list_widget = QListWidget(self.windows)
-        print(url)
-        print(rsp.content)
-        print(rsp.http_status)
         rsp = json.loads(rsp.content)
         self.items = rsp["items"]
         for item in self.items:
             self.item_list_widget.addItem(item)
+
         self.windows.resize(500, 314)
         self.windows.setFixedSize(500, 314)
 
         self.item_list_widget.move(20, 20)
         self.item_list_widget.resize(460, 254)
+        self.item_list_widget.clicked.connect(self.handle_item_list_widget_clicked)
+        self.item_list_widget.doubleClicked.connect(self.handle_item_list_widget_double_clicked)
+
+        self.download_button = QPushButton(self.windows)
+        self.download_button.move(20, 280)
+        self.download_button.setText("Download")
+        self.download_button.clicked.connect(self.handle_download_button_clicked)
+        self.download_button.setEnabled(False)
         self.windows.show()
 
         pass
+
+    def handle_download_button_clicked(self):
+        print(self.item_list_widget.currentItem().text())
+        self.filename = self.item_list_widget.currentItem().text()
+        self.download_xlsx(self.filename)
+        pass
+
+    def handle_item_list_widget_clicked(self):
+        self.download_button.setEnabled(True)
+
+    def handle_item_list_widget_double_clicked(self):
+        self.filename = self.item_list_widget.currentItem().text()
+        self.download_xlsx(self.filename)
+
+    def download_xlsx(self, filename):
+        url = self.config_reader.server_url + f"/download?list_type={self.list_type.value}&filename={filename}"
+        rsp = self.requester.get(url, allow_redirects=False)
+        with open(default_path + filename, "wb") as f:
+            f.write(bytes(rsp.content))
 
 
 class PlayCountClient(QObject):
