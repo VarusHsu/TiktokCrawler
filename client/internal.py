@@ -5,8 +5,6 @@ from PyQt6 import QtCore
 from PyQt6.QtCore import QObject
 from PyQt6.QtWidgets import QApplication, QWidget, QListWidget, QPushButton, QFileDialog, QMessageBox
 
-sys.path.append(".")
-
 from common.feishu import Feishu
 from generate.generate_path import default_path
 from common.logger import Logger

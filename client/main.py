@@ -1,8 +1,11 @@
-from internal import PlayCountClient
+import sys
+
+sys.path.append(".")
+import internal
 
 
 def main():
-    play_count_client_internal = PlayCountClient()
+    play_count_client_internal = internal.PlayCountClient()
     play_count_client_internal.render()
 
 
