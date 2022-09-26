@@ -40,6 +40,7 @@ class UrlType(Enum):
     WwwTiktokCom = 3
     WwwTiktokComT = 4
     KuaiVideoCom = 5
+    SKwAiP = 6
 
 
 class VideoResponseStatus(Enum):

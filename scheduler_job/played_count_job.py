@@ -54,6 +54,8 @@ def run():
                 res = www_tiktok_com(url, requester)
             elif url_type == UrlType.KuaiVideoCom:
                 res = kuai_video_com(url, requester)
+            elif url_type == UrlType.SKwAiP:
+                res = s_kw_ai_p(url, requester)
             else:
                 res = www_tiktok_com_t(url, requester)
             res["Url"] = url
@@ -203,6 +205,10 @@ def kuai_video_com(url, requester: Requester):
         "Digg": None,
         "Comment": None,
     }
+
+
+def s_kw_ai_p(url: str, requester: Requester):
+    return kuai_video_com(url, requester)
 
 
 def get_tiktok_video_id(url: str) -> str:

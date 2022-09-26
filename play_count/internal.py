@@ -138,6 +138,8 @@ class PlayCountCrawler(QObject):
                         res = self.www_tiktok_com(url)
                     elif url_type == UrlType.KuaiVideoCom:
                         res = self.kuai_video_com(url)
+                    elif url_type == UrlType.SKwAiP:
+                        res = self.s_kw_ai_p(url)
                     else:
                         res = self.www_tiktok_com_t(url)
                     res["Url"] = url
@@ -224,6 +226,8 @@ class PlayCountCrawler(QObject):
             return UrlType.WwwTiktokCom
         elif url.startswith("https://kwai-video.com"):
             return UrlType.KuaiVideoCom
+        elif url.startswith("http://s.kw.ai/p"):
+            return UrlType.SKwAiP
         else:
             return UrlType.Invalid
 
@@ -332,6 +336,9 @@ class PlayCountCrawler(QObject):
             "Digg": None,
             "Comment": None,
         }
+
+    def s_kw_ai_p(self, url: str):
+        return self.kuai_video_com(url=url)
 
     @staticmethod
     def get_tiktok_video_id(url: str) -> str:
