@@ -1,5 +1,6 @@
 import json
 import sys
+from threading import Thread
 
 from PyQt6 import QtCore
 from PyQt6.QtCore import QObject
@@ -29,48 +30,63 @@ class DownloadWindows(QObject):
     requester: Requester
     filename: str
 
+    update_ui_signals: UpdateUISignals
+
     def __init__(self, list_type: ListType, requester: Requester):
         super().__init__()
         self.list_type = list_type
         self.requester = requester
         self.config_reader = ConfigReader()
         self.config_reader.read_config()
+        self.update_ui_signals = UpdateUISignals()
+        self.update_ui_signals.refresh_items_signal.connect(self.handle_refresh_items_signal)
 
     def render(self):
+
+        def get_items():
+            if self.list_type == ListType.ByTime:
+                url = self.config_reader.server_url + "/list_history_by_time"
+            else:
+                url = self.config_reader.server_url + "/list_history_by_increase"
+            try:
+                rsp = self.requester.get(url, allow_redirects=True)
+            except Exception as e:
+                self.update_ui_signals.refresh_items_signal.emit(["Internet error.", str(e)])
+                return
+            try:
+                rsp = json.loads(rsp.content)
+                self.items = rsp["items"]
+            except Exception as e:
+                self.update_ui_signals.refresh_items_signal.emit(["Json load error.", str(e)])
+
+            items = self.items
+            self.update_ui_signals.refresh_items_signal.emit(items)
+
         self.windows = QWidget()
         if self.list_type == ListType.ByTime:
             self.windows.setWindowTitle("Download By Time")
-            url = self.config_reader.server_url + "/list_history_by_time"
         else:
             self.windows.setWindowTitle("Download By Increase")
-            url = self.config_reader.server_url + "/list_history_by_increase"
-        try:
-            rsp = self.requester.get(url, allow_redirects=True)
-        except Exception as e:
-            self.message_box = QMessageBox(self.windows)
-            self.message_box.setText(str(e))
-            return
-        self.item_list_widget = QListWidget(self.windows)
-        # todo may Exception
-        rsp = json.loads(rsp.content)
-        self.items = rsp["items"]
-        for item in self.items:
-            self.item_list_widget.addItem(item)
-
         self.windows.resize(500, 314)
         self.windows.setFixedSize(500, 314)
 
+        self.item_list_widget = QListWidget(self.windows)
         self.item_list_widget.move(20, 20)
         self.item_list_widget.resize(460, 254)
         self.item_list_widget.clicked.connect(self.handle_item_list_widget_clicked)
         self.item_list_widget.doubleClicked.connect(self.handle_item_list_widget_double_clicked)
+        self.item_list_widget.addItem("Loading...")
 
         self.download_button = QPushButton(self.windows)
         self.download_button.move(20, 280)
         self.download_button.setText("Download")
         self.download_button.clicked.connect(self.handle_download_button_clicked)
         self.download_button.setEnabled(False)
+
         self.windows.show()
+
+        get_items_thread: Thread = Thread(target=get_items)
+        get_items_thread.start()
 
         pass
 
@@ -86,6 +102,11 @@ class DownloadWindows(QObject):
     def handle_item_list_widget_double_clicked(self):
         self.filename = self.item_list_widget.currentItem().text()
         self.download_xlsx(self.filename)
+
+    def handle_refresh_items_signal(self, items: []):
+        self.item_list_widget.clear()
+        for item in items:
+            self.item_list_widget.addItem(item)
 
     def download_xlsx(self, filename):
         url = self.config_reader.server_url + f"/download?list_type={self.list_type.value}&filename={filename}"
