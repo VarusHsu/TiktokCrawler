@@ -10,3 +10,4 @@ output.xlsx
 main.spec
 generate_path.py
 *.xlsx
+scheduler_job/source.py
