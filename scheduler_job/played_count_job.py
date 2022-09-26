@@ -65,12 +65,19 @@ def run():
     logger.log_message("COMPLETE", "Complete.")
 
 
+# 定时任务跑在服务器上， 采用的是伦敦时间。 +8小时获得北京时间
 def get_abs_output_filename() -> str:
-    return default_path + time.strftime("%Y-%m-%d_%H:%M:%S.xlsx", time.localtime())
+    now = datetime.datetime.now()
+    beijing_time = now + datetime.timedelta(hours=8)
+    beijing_time_str = datetime.datetime.strftime(beijing_time, "%Y-%m-%d_%H:%M.xlsx")
+    return default_path + beijing_time_str
 
 
 def get_filename() -> str:
-    return str(datetime.date.today()) + ".xlsx"
+    now = datetime.datetime.now()
+    beijing_time = now + datetime.timedelta(hours=8)
+    beijing_time_str = datetime.datetime.strftime(beijing_time, "%Y-%m-%d_%H:%M.xlsx")
+    return beijing_time_str
 
 
 def get_url_type(url: str):

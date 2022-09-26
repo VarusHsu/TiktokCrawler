@@ -29,11 +29,17 @@ def main():
 
 
 def get_filename() -> str:
-    return str(datetime.date.today()) + ".xlsx"
+    now = datetime.datetime.now()
+    beijing_time = now + datetime.timedelta(hours=8)
+    beijing_time_str = datetime.datetime.strftime(beijing_time, "%Y-%m-%d_%H:%M.xlsx")
+    return beijing_time_str
 
 
 def get_yesterday_filename() -> str:
-    return str(datetime.date.today() + datetime.timedelta(-1)) + ".xlsx"
+    now = datetime.datetime.now()
+    beijing_time = now + datetime.timedelta(hours=-16)
+    beijing_time_str = datetime.datetime.strftime(beijing_time, "%Y-%m-%d_%H:%M.xlsx")
+    return beijing_time_str
 
 
 if __name__ == '__main__':
