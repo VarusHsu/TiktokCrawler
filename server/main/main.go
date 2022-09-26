@@ -116,7 +116,9 @@ func getList(listType ListType) []string {
 			path = strings.Replace(path, "history/by_time/", "", 1)
 			path = strings.Replace(path, "history/by_increase/", "", 1)
 		}
-		files = append(files, path)
+		if path != ".gitkeep" && path != "nohup.out" {
+			files = append(files, path)
+		}
 		return nil
 	})
 	if err != nil {

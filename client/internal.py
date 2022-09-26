@@ -51,6 +51,7 @@ class DownloadWindows(QObject):
             self.message_box.setText(str(e))
             return
         self.item_list_widget = QListWidget(self.windows)
+        # todo may Exception
         rsp = json.loads(rsp.content)
         self.items = rsp["items"]
         for item in self.items:
