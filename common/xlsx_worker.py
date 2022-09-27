@@ -96,6 +96,9 @@ class XlsxWorker:
             if sheet.max_row == rows:
                 return res
             elif sheet.cell(rows, column).value is not None:
+                print(sheet.cell(rows, column).value)
+                if type(sheet.cell(rows, column).value) is not str:
+                    continue
                 start = sheet.cell(rows, column).value.find("@") + 1
                 unique_id = sheet.cell(rows, column).value[start:]
                 if unique_id.find("?") != -1:
