@@ -39,3 +39,59 @@
 ```shell
   sudo nohup make serve &
 ```
+
+* 项目结构（Version 1.1.1）
+```
+.
+├── README.md
+├── client
+│   ├── internal.py
+│   └── main.py
+├── common
+│   ├── __init__.py
+│   ├── config_reader.py
+│   ├── config_windows.py
+│   ├── enums.py
+│   ├── feishu.py
+│   ├── internal.py
+│   ├── internalV2.py
+│   ├── logger.py
+│   ├── reporter.py
+│   ├── requester.py
+│   ├── signals.py
+│   ├── util.py
+│   └── xlsx_worker.py
+├── config
+│   └── config.yaml
+├── generate
+│   └── __init__.py
+├── hashtag
+│   ├── internal.py
+│   └── main.py
+├── makefile
+├── play_count
+│   ├── internal.py
+│   └── main.py
+├── requirements.txt
+├── scheduler_job
+│   ├── get_increase.py
+│   ├── played_count_job.py
+│   └── source.py
+├── script
+│   ├── get_increase.sh
+│   ├── scheduler_get_play_count.sh
+│   └── set_default_path.sh
+└── server
+    ├── generate
+    ├── go.mod
+    ├── go.sum
+    ├── history
+    │   ├── by_increase
+    │   ├── by_time
+    │   └── compare_cache
+    ├── logger
+    │   └── logger.go
+    ├── main
+    │   └── main.go
+    └── source
+```
