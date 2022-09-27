@@ -61,7 +61,7 @@ def run():
             res["Url"] = url
             xlsx_writer.writer_line(res)
     time.sleep(3)
-    os.system(f"cp {filename} /home/ubuntu/TiktokCrawler/server/history/compare_cache/{get_filename()}.")
+    os.system(f"cp {filename} /home/ubuntu/TiktokCrawler/server/history/compare_cache/{get_filename()}")
     during = reporter.get_during()
     logger.log_message("SUMMERY", f"Cost {during / 1000} s")
     logger.log_message("COMPLETE", "Complete.")
