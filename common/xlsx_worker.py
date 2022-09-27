@@ -152,6 +152,8 @@ def init_reader(path: str) -> 'XlsxWorker | None':
         instance.ws = instance.wb.worksheets[0]
     except InvalidFileException:
         return None
+    except FileNotFoundError:
+        return None
     instance.cur_line = 2
     instance.get_total_rows()
     return instance
