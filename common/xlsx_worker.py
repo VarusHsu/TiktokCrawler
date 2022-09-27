@@ -194,7 +194,7 @@ def verify_xlsx_format(path: str) -> bool:
 
 
 def compare(yesterday: XlsxWorker, today: XlsxWorker, name: str):
-    writer = init_writer("/home/ubuntu/TiktokCrawler/server/history/by_increase/", ("Url", "Status", "VideoId", "Comment", "Share", "Played", "Digg",))
+    writer = init_writer(f"/home/ubuntu/TiktokCrawler/server/history/by_increase/{name}", ("Url", "Status", "VideoId", "Comment", "Share", "Played", "Digg",))
     remove_duplication = []
     while True:
         yesterday_data = yesterday.read_line()

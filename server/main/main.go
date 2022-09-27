@@ -168,7 +168,7 @@ func setSourcePath(fileName string) {
 		logger.LogMessage("ERROR", "Open file error.")
 	}
 	defer file.Close()
-	code := fmt.Sprintf("source_path = '/home/ubuntu/TiktokCrawler/server/source/%s\n'", fileName)
+	code := fmt.Sprintf("source_path = '/home/ubuntu/TiktokCrawler/server/source/%s'\n", fileName)
 	writer := bufio.NewWriter(file)
 	_, err = writer.WriteString(code)
 	if err != nil {
