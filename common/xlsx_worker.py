@@ -113,6 +113,9 @@ class XlsxWorker:
                 return res
             elif sheet.cell(rows, column).value is not None:
                 unique_id = sheet.cell(rows, column).value
+                unique_id = str(unique_id)
+                if unique_id.startswith("@"):
+                    unique_id = unique_id.replace("@", "")
                 if unique_id not in res:
                     res.append(unique_id)
             rows += 1
@@ -136,8 +139,15 @@ class XlsxWorker:
         ws = self.wb.worksheets[3]
         res = merge_array(res, self.__get_unique_id(2, ws))
         res = merge_array(res, self.__get_link_unique(3, ws))
+        ws = self.wb.worksheets[4]
+        res = merge_array(res, self.__get_unique_id(2, ws))
+        res = merge_array(res, self.__get_link_unique(3, ws))
+        res = merge_array(res, self.__get_unique_id(13, ws))
+        res = merge_array(res, self.__get_link_unique(14, ws))
+        res = merge_array(res, self.__get_unique_id(19, ws))
+        res = merge_array(res, self.__get_link_unique(20, ws))
 
-        for i in range(4, 10):
+        for i in range(5, 17):
             ws = self.wb.worksheets[i]
             res = merge_array(res, self.__get_unique_id(1, ws))
             print(len(res))
