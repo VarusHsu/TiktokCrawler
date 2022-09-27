@@ -210,6 +210,7 @@ def compare(yesterday: XlsxWorker, today: XlsxWorker, name: str):
                     "Status": XlsxCompareResult.TodayNotFound,
                     "VideoId": yesterday_data.datas["VideoId"],
                 })
+                break
             elif today_data.datas["Url"] != yesterday_data.datas["Url"]:
                 continue
             elif today_data.datas["Status"] != "Success" and yesterday_data.datas["Status"] != "Success":
