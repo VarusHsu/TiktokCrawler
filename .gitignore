@@ -11,3 +11,4 @@ main.spec
 generate_path.py
 *.xlsx
 scheduler_job/source.py
+nohup.out
