@@ -66,7 +66,7 @@ class ListType(Enum):
     ByIncrease = 2
 
 
-class XlsxCompareResult:
+class XlsxCompareResult(Enum):
     Invalid = 0
     Uncompleted = 1
     YesterdayNotFound = 2
