@@ -1,7 +1,9 @@
+import io
 import json
 import os.path
 import sys
 import time
+import traceback
 from threading import Thread
 
 from PyQt6 import QtCore
@@ -106,49 +108,55 @@ class PlayCountCrawler(QObject):
 
     def handle_crawl_button_clicked(self):
         def run():
-            fields = ("Url", "Status", "VideoId", "Comment", "Share", "Played", "Digg")
-            filename = self.get_abs_output_filename()
-            self.xlsx_writer = init_writer(path=filename, fields=fields)
-            if self.xlsx_reader is None:
-                self.logger.log_message("ERROR", "Open a xlsx file first.")
-                return
-            self.progress_bar.setValue(0)
-            self.logger.log_message("BEGIN", "Crawl start.")
-            self.reporter.set_timer()
-            while True:
-                read_res = self.xlsx_reader.read_url()
-                if read_res.status == XlsxReadStatus.NoMoreData:
-                    break
-                elif read_res.status == XlsxReadStatus.PermissionDenied:
-                    self.logger.log_message("ERROR", "Permission denied.")
-                elif read_res.status == XlsxReadStatus.Invalid:
-                    self.logger.log_message("ERROR", "Invalid.")
-                else:
-                    url = read_res.url
-                    self.logger.log_message("CRAWL", f"Process '{url}'.")
-                    url_type = self.get_url_type(url)
-                    if url_type == UrlType.Invalid:
-                        self.logger.log_message("ERROR", f"Invalid url '{url}'.")
-                        continue
-                    elif url_type == UrlType.VtTiktokCom:
-                        res = self.vt_tiktok_com(url)
-                    elif url_type == UrlType.VmTiktokCom:
-                        res = self.vm_tiktok_com(url)
-                    elif url_type == UrlType.WwwTiktokCom:
-                        res = self.www_tiktok_com(url)
-                    elif url_type == UrlType.KuaiVideoCom:
-                        res = self.kuai_video_com(url)
-                    elif url_type == UrlType.SKwAiP:
-                        res = self.s_kw_ai_p(url)
+            try:
+                fields = ("Url", "Status", "VideoId", "Comment", "Share", "Played", "Digg")
+                filename = self.get_abs_output_filename()
+                self.xlsx_writer = init_writer(path=filename, fields=fields)
+                if self.xlsx_reader is None:
+                    self.logger.log_message("ERROR", "Open a xlsx file first.")
+                    return
+                self.progress_bar.setValue(0)
+                self.logger.log_message("BEGIN", "Crawl start.")
+                self.reporter.set_timer()
+                while True:
+                    read_res = self.xlsx_reader.read_url()
+                    if read_res.status == XlsxReadStatus.NoMoreData:
+                        break
+                    elif read_res.status == XlsxReadStatus.PermissionDenied:
+                        self.logger.log_message("ERROR", "Permission denied.")
+                    elif read_res.status == XlsxReadStatus.Invalid:
+                        self.logger.log_message("ERROR", "Invalid.")
                     else:
-                        res = self.www_tiktok_com_t(url)
-                    res["Url"] = url
-                    self.xlsx_writer.writer_line(res)
-                    self.update_ui_signals.progress_bar_update_signal.emit(int((self.xlsx_reader.cur_line - 1) / self.xlsx_reader.total_rows * 100))
-            time.sleep(3)
-            during = self.reporter.get_during()
-            self.logger.log_message("SUMMERY", f"Cost {during / 1000} s")
-            self.logger.log_message("COMPLETE", "Complete.", self.notice_email)
+                        url = read_res.url
+                        self.logger.log_message("CRAWL", f"Process '{url}'.")
+                        url_type = self.get_url_type(url)
+                        if url_type == UrlType.Invalid:
+                            self.logger.log_message("ERROR", f"Invalid url '{url}'.")
+                            continue
+                        elif url_type == UrlType.VtTiktokCom:
+                            res = self.vt_tiktok_com(url)
+                        elif url_type == UrlType.VmTiktokCom:
+                            res = self.vm_tiktok_com(url)
+                        elif url_type == UrlType.WwwTiktokCom:
+                            res = self.www_tiktok_com(url)
+                        elif url_type == UrlType.KuaiVideoCom:
+                            res = self.kuai_video_com(url)
+                        elif url_type == UrlType.SKwAiP:
+                            res = self.s_kw_ai_p(url)
+                        else:
+                            res = self.www_tiktok_com_t(url)
+                        res["Url"] = url
+                        self.xlsx_writer.writer_line(res)
+                        self.update_ui_signals.progress_bar_update_signal.emit(int((self.xlsx_reader.cur_line - 1) / self.xlsx_reader.total_rows * 100))
+                time.sleep(3)
+                during = self.reporter.get_during()
+                self.logger.log_message("SUMMERY", f"Cost {during / 1000} s")
+                self.logger.log_message("COMPLETE", "Complete.", self.notice_email)
+            except Exception as e:
+                fp = io.StringIO()  # 创建内存文件对象
+                traceback.print_exc(file=fp)
+                message = fp.getvalue()
+                self.logger.log_message("Exception", message)
 
         crawl_thread: Thread = Thread(target=run)
         crawl_thread.start()

@@ -1,8 +1,10 @@
+import io
 import json
 import os
 import re
 import sys
 import time
+import traceback
 from threading import Thread
 
 import requests
@@ -168,92 +170,98 @@ class Hashtag(QObject):
             return
 
         def run():
-            self.remove_duplication_page.clear()
-            self.remove_duplication_author.clear()
-            self.reporter.init_counter("VideoCounter")
-            self.reporter.init_counter("UserCounter")
-            self.reporter.set_timer()
-            self.logger.log_message("BEGIN", "Crawl start")
-            fields = ("HashtagName", "HashtagVideoCount", "HashtagViewCount", "UserNickname", "UserSignature", "UserHomePage",
-                      "UserDiggCount", "UserFollowerCount", "UserHeartCount", "UserVideoCount", "VideoPage", "VideoDiggCount", "VideoPlayCount",
-                      "VideoShareCount", "VideoCommentCount", "VideoCreateTime", "VideoDescription", "Email")
-            filename = self.get_abs_output_filename()
-            self.xlsx_writer = init_writer(path=filename, fields=fields)
-            self.download_contacted_excel()
-            self.remove_dup_reader = init_remove_dup_reader()
-            if self.remove_dup_reader is None:
-                self.logger.log_message("ERROR", "Initial remove duplication xlsx error.")
-            else:
-                self.remove_duplication_author = self.remove_dup_reader.read_unique_id()
-                self.logger.log_message("DEBUG", f"{self.remove_duplication_author}")
-                os.remove(default_path + "cache.xlsx")
-                self.logger.log_message("CRAWL", "Initial remove duplication xlsx success.")
-            for hashtag in self.task_list:
-                hashtag_info = self.get_hashtag_info(hashtag)
-                if hashtag_info.status == GetHashtagInfoStatus.NetworkError:
-                    self.logger.log_message("ERROR", f"Get Hashtag '{hashtag_info.name}' info network error.")
-                elif hashtag_info.status == GetHashtagInfoStatus.NoSuchHashtag:
-                    self.logger.log_message("ERROR", f"No such hashtag:'{hashtag_info.name}'.")
+            try:
+                self.remove_duplication_page.clear()
+                self.remove_duplication_author.clear()
+                self.reporter.init_counter("VideoCounter")
+                self.reporter.init_counter("UserCounter")
+                self.reporter.set_timer()
+                self.logger.log_message("BEGIN", "Crawl start")
+                fields = ("HashtagName", "HashtagVideoCount", "HashtagViewCount", "UserNickname", "UserSignature", "UserHomePage",
+                          "UserDiggCount", "UserFollowerCount", "UserHeartCount", "UserVideoCount", "VideoPage", "VideoDiggCount", "VideoPlayCount",
+                          "VideoShareCount", "VideoCommentCount", "VideoCreateTime", "VideoDescription", "Email")
+                filename = self.get_abs_output_filename()
+                self.xlsx_writer = init_writer(path=filename, fields=fields)
+                self.download_contacted_excel()
+                self.remove_dup_reader = init_remove_dup_reader()
+                if self.remove_dup_reader is None:
+                    self.logger.log_message("ERROR", "Initial remove duplication xlsx error.")
                 else:
-                    self.logger.log_message("CRAWL", f"Get Hashtag '{hashtag_info.name}' info success.")
-                    cursor = 0
-                    while True:
-                        video_ids = ''
-                        url = f"https://www.tiktok.com/api/challenge/item_list/?aid=1988&challengeID={hashtag_info.hashtag_id}&count=30&cursor={cursor}"
-                        cursor = cursor + 30
-                        response = self.requester.get(url, allow_redirects=False)
-                        if response.http_status != HttpResponseStatus.Success:
-                            continue
-                        rsp = json.loads(response.content)
-                        has_more = rsp["hasMore"]
-                        self.logger.log_message("CRAWL", f"Has more: {has_more}.")
-                        if rsp.get("itemList") is None or len(rsp.get("itemList")) == 0:
-                            break
-                        for video in rsp["itemList"]:
-                            self.reporter.self_increase("VideoCounter")
-                            data = {
-                                "HashtagName": hashtag_info.name,
-                                "HashtagVideoCount": hashtag_info.video_count,
-                                "HashtagViewCount": hashtag_info.view_count,
-                                "UserNickname": video["author"]["uniqueId"],
-                                "UserSignature": video["author"]["signature"],
-                                "UserHomePage": f'https://www.tiktok.com/@{video["author"]["uniqueId"]}',
-                                "UserDiggCount": video["authorStats"]["diggCount"],
-                                "UserFollowerCount": video["authorStats"]["followerCount"],
-                                "UserHeartCount": video["authorStats"]["heartCount"],
-                                "UserVideoCount": video["authorStats"]["videoCount"],
-                                "VideoPage": f'https://www.tiktok.com/@{video["author"]["uniqueId"]}/video/{video["id"]}',
-                                "VideoDiggCount": video["stats"]["diggCount"],
-                                "VideoPlayCount": video["stats"]["playCount"],
-                                "VideoShareCount": video["stats"]["shareCount"],
-                                "VideoCommentCount": video["stats"]["commentCount"],
-                                "VideoCreateTime": self.timestamp_format(video["createTime"]),
-                                "VideoDescription": video["desc"],
-                                "Email": self.get_email(video["author"]["signature"])
-                            }
-                            video_ids = video_ids + video["id"]
-                            if "@" in data.get("UserSignature"):
-                                if video["author"]["uniqueId"] not in self.remove_duplication_author:
-                                    self.remove_duplication_author.append(video["author"]["uniqueId"])
-                                    self.xlsx_writer.writer_line(data)
-                                    self.reporter.self_increase("UserCounter")
-                                else:
-                                    pass
-                        if video_ids in self.remove_duplication_page:
-                            break
-                        else:
-                            self.remove_duplication_page.append(video_ids)
-                        if not has_more:
-                            break
-            video_count = self.reporter.get_counter("VideoCounter")
-            user_count = self.reporter.get_counter("UserCounter")
-            time_during = self.reporter.get_during()
+                    self.remove_duplication_author = self.remove_dup_reader.read_unique_id()
+                    self.logger.log_message("DEBUG", f"{self.remove_duplication_author}")
+                    os.remove(default_path + "cache.xlsx")
+                    self.logger.log_message("CRAWL", "Initial remove duplication xlsx success.")
+                for hashtag in self.task_list:
+                    hashtag_info = self.get_hashtag_info(hashtag)
+                    if hashtag_info.status == GetHashtagInfoStatus.NetworkError:
+                        self.logger.log_message("ERROR", f"Get Hashtag '{hashtag_info.name}' info network error.")
+                    elif hashtag_info.status == GetHashtagInfoStatus.NoSuchHashtag:
+                        self.logger.log_message("ERROR", f"No such hashtag:'{hashtag_info.name}'.")
+                    else:
+                        self.logger.log_message("CRAWL", f"Get Hashtag '{hashtag_info.name}' info success.")
+                        cursor = 0
+                        while True:
+                            video_ids = ''
+                            url = f"https://www.tiktok.com/api/challenge/item_list/?aid=1988&challengeID={hashtag_info.hashtag_id}&count=30&cursor={cursor}"
+                            cursor = cursor + 30
+                            response = self.requester.get(url, allow_redirects=False)
+                            if response.http_status != HttpResponseStatus.Success:
+                                continue
+                            rsp = json.loads(response.content)
+                            has_more = rsp["hasMore"]
+                            self.logger.log_message("CRAWL", f"Has more: {has_more}.")
+                            if rsp.get("itemList") is None or len(rsp.get("itemList")) == 0:
+                                break
+                            for video in rsp["itemList"]:
+                                self.reporter.self_increase("VideoCounter")
+                                data = {
+                                    "HashtagName": hashtag_info.name,
+                                    "HashtagVideoCount": hashtag_info.video_count,
+                                    "HashtagViewCount": hashtag_info.view_count,
+                                    "UserNickname": video["author"]["uniqueId"],
+                                    "UserSignature": video["author"]["signature"],
+                                    "UserHomePage": f'https://www.tiktok.com/@{video["author"]["uniqueId"]}',
+                                    "UserDiggCount": video["authorStats"]["diggCount"],
+                                    "UserFollowerCount": video["authorStats"]["followerCount"],
+                                    "UserHeartCount": video["authorStats"]["heartCount"],
+                                    "UserVideoCount": video["authorStats"]["videoCount"],
+                                    "VideoPage": f'https://www.tiktok.com/@{video["author"]["uniqueId"]}/video/{video["id"]}',
+                                    "VideoDiggCount": video["stats"]["diggCount"],
+                                    "VideoPlayCount": video["stats"]["playCount"],
+                                    "VideoShareCount": video["stats"]["shareCount"],
+                                    "VideoCommentCount": video["stats"]["commentCount"],
+                                    "VideoCreateTime": self.timestamp_format(video["createTime"]),
+                                    "VideoDescription": video["desc"],
+                                    "Email": self.get_email(video["author"]["signature"])
+                                }
+                                video_ids = video_ids + video["id"]
+                                if "@" in data.get("UserSignature"):
+                                    if video["author"]["uniqueId"] not in self.remove_duplication_author:
+                                        self.remove_duplication_author.append(video["author"]["uniqueId"])
+                                        self.xlsx_writer.writer_line(data)
+                                        self.reporter.self_increase("UserCounter")
+                                    else:
+                                        pass
+                            if video_ids in self.remove_duplication_page:
+                                break
+                            else:
+                                self.remove_duplication_page.append(video_ids)
+                            if not has_more:
+                                break
+                video_count = self.reporter.get_counter("VideoCounter")
+                user_count = self.reporter.get_counter("UserCounter")
+                time_during = self.reporter.get_during()
 
-            time.sleep(5)
-            self.logger.log_message("COMPLETE", "Crawl complete.")
-            self.logger.log_message("SUMMERY", f"Visit videos: {video_count}.")
-            self.logger.log_message("SUMMERY", f"Get users: {user_count}.")
-            self.logger.log_message("SUMMERY", f"Time cost: {time_during / 1000} s.")
+                time.sleep(5)
+                self.logger.log_message("COMPLETE", "Crawl complete.")
+                self.logger.log_message("SUMMERY", f"Visit videos: {video_count}.")
+                self.logger.log_message("SUMMERY", f"Get users: {user_count}.")
+                self.logger.log_message("SUMMERY", f"Time cost: {time_during / 1000} s.")
+            except Exception as e:
+                fp = io.StringIO()  # 创建内存文件对象
+                traceback.print_exc(file=fp)
+                message = fp.getvalue()
+                self.logger.log_message("Exception", message)
 
         crawl_thread: Thread = Thread(target=run)
         crawl_thread.start()
