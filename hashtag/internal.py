@@ -317,7 +317,7 @@ class Hashtag(QObject):
         res = []
         chips = signature.split(" ")
         for chip in chips:
-            merge_array(res, chip.split("\n"))
+            res = merge_array(res, chip.split("\n"))
         for value in res:
             if re.match(pattern, value):
                 return value
