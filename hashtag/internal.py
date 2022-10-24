@@ -65,7 +65,7 @@ class Hashtag(QObject):
 
     # status
     task_list = []
-    remove_duplication_author = []
+    remove_duplication_author: set = set()
     remove_duplication_page = []
     hashtag_str = ''
     output_path = default_path
@@ -187,7 +187,7 @@ class Hashtag(QObject):
                 if self.remove_dup_reader is None:
                     self.logger.log_message("ERROR", "Initial remove duplication xlsx error.")
                 else:
-                    self.remove_duplication_author = self.remove_dup_reader.read_unique_id()
+                    self.remove_duplication_author = self.remove_dup_reader.read_unique_id_v2()
                     self.logger.log_message("DEBUG", f"{self.remove_duplication_author}")
                     os.remove(default_path + "cache.xlsx")
                     self.logger.log_message("CRAWL", "Initial remove duplication xlsx success.")
@@ -237,7 +237,7 @@ class Hashtag(QObject):
                                 video_ids = video_ids + video["id"]
                                 if "@" in data.get("UserSignature"):
                                     if video["author"]["uniqueId"] not in self.remove_duplication_author:
-                                        self.remove_duplication_author.append(video["author"]["uniqueId"])
+                                        self.remove_duplication_author.add(video["author"]["uniqueId"])
                                         self.xlsx_writer.writer_line(data)
                                         self.reporter.self_increase("UserCounter")
                                     else:

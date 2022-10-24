@@ -24,6 +24,37 @@ class ReadPlayedDataResult:
     datas: dict
 
 
+# a map from line num to letter
+column_dict: dict = {
+    1: "A",
+    2: "B",
+    3: "C",
+    4: "D",
+    5: "E",
+    6: "F",
+    7: "G",
+    8: "H",
+    9: "I",
+    10: "J",
+    11: "K",
+    12: "L",
+    13: "M",
+    14: "N",
+    15: "O",
+    16: "P",
+    17: "Q",
+    18: "R",
+    19: "S",
+    20: "T",
+    21: "U",
+    22: "V",
+    23: "W",
+    24: "X",
+    25: "Y",
+    26: "Z"
+}
+
+
 class XlsxWorker:
     status: XlsxWorkerStatus
     cur_line: int
@@ -88,6 +119,7 @@ class XlsxWorker:
         res.datas = datas
         return res
 
+    # deprecated
     @staticmethod
     def __get_link_unique(column: int, sheet: Worksheet) -> []:
         res = []
@@ -107,6 +139,7 @@ class XlsxWorker:
                     res.append(unique_id)
             rows += 1
 
+    # deprecated
     @staticmethod
     def __get_unique_id(column: int, sheet: Worksheet) -> []:
         res = []
@@ -123,6 +156,50 @@ class XlsxWorker:
                     res.append(unique_id)
             rows += 1
 
+    @staticmethod
+    def __get_link_unique_v2(column: int, sheet: Worksheet) -> set:
+        res: set = set()
+        rows = 3
+        max_row = max((s.row for s in sheet[column_dict[column]] if s.value), default=3)
+        print(f"sheet max column: {sheet.max_row}")
+        print(f"column max column: {max((s.row for s in sheet[column_dict[column]] if s.value), default=3)}")
+        print(column_dict[column])
+        print()
+
+        while True:
+            if max_row == rows:
+                return res
+            elif sheet.cell(rows, column).value is not None:
+                if type(sheet.cell(rows, column).value) is not str:
+                    continue
+                start = sheet.cell(rows, column).value.find("@") + 1
+                unique_id = sheet.cell(rows, column).value[start:]
+                if unique_id.find("?") != -1:
+                    unique_id = unique_id[0:unique_id.find("?")]
+                res.add(unique_id)
+            rows += 1
+
+    @staticmethod
+    def __get_unique_id_v2(column: int, sheet: Worksheet) -> set:
+        res: set = set()
+        max_row = max(list(s.row for s in sheet[column_dict[column]] if s.value), default=3)
+        print(f"sheet max column: {sheet.max_row}")
+        print(f"column max column: {max((s.row for s in sheet[column_dict[column]] if s.value), default=3)}")
+        print(column_dict[column])
+        print()
+        rows = 3
+        while True:
+            if max_row == rows:
+                return res
+            elif sheet.cell(rows, column).value is not None:
+                unique_id = sheet.cell(rows, column).value
+                unique_id = str(unique_id)
+                if unique_id.startswith("@"):
+                    unique_id = unique_id.replace("@", "")
+                res.add(unique_id)
+            rows += 1
+
+    # deprecated
     def read_unique_id(self) -> []:
         res = []
         if self.status != XlsxWorkerStatus.RemoveDupReader:
@@ -153,7 +230,42 @@ class XlsxWorker:
         for i in range(5, 17):
             ws = self.wb.worksheets[i]
             res = merge_array(res, self.__get_unique_id(1, ws))
-            print(len(res))
+        return res
+
+    def read_unique_id_v2(self) -> 'set|None':
+        res: set = set()
+        if self.status != XlsxWorkerStatus.RemoveDupReader:
+            return None
+        ws = self.wb.worksheets[1]
+        res = self.__get_unique_id_v2(2, ws) | res
+        res = self.__get_unique_id_v2(11, ws) | res
+        res = self.__get_link_unique_v2(3, ws) | res
+        res = self.__get_link_unique_v2(12, ws) | res
+        ws = self.wb.worksheets[3]
+        res = self.__get_unique_id_v2(2, ws) | res
+        res = self.__get_unique_id_v2(12, ws) | res
+        res = self.__get_unique_id_v2(20, ws) | res
+        res = self.__get_link_unique_v2(3, ws) | res
+        res = self.__get_link_unique_v2(13, ws) | res
+        res = self.__get_link_unique_v2(21, ws) | res
+        ws = self.wb.worksheets[2]
+        res = self.__get_unique_id_v2(2, ws) | res
+        res = self.__get_link_unique_v2(3, ws) | res
+        ws = self.wb.worksheets[4]
+        res = self.__get_link_unique_v2(3, ws) | res
+        res = self.__get_unique_id_v2(2, ws) | res
+        ws = self.wb.worksheets[5]
+
+        res = self.__get_unique_id_v2(2, ws) | res
+        res = self.__get_unique_id_v2(11, ws) | res
+        res = self.__get_unique_id_v2(17, ws) | res
+        res = self.__get_link_unique_v2(3, ws) | res
+        res = self.__get_link_unique_v2(12, ws) | res
+        res = self.__get_link_unique_v2(18, ws) | res
+
+        for i in range(6, 17):
+            ws = self.wb.worksheets[i]
+            res = self.__get_unique_id_v2(1, ws) | res
         return res
 
 
