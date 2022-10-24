@@ -25,9 +25,11 @@ class Requester:
     def __init__(self, logger: Logger):
         self.logger = logger
 
-    def get(self, url: str, allow_redirects: bool, timeout: int = 60) -> HttpResponse:
+    def get(self, url: str, allow_redirects: bool, headers=None, timeout: int = 60) -> HttpResponse:
+        if headers is None:
+            headers = headers
         try:
-            response = requests.get(url, allow_redirects=allow_redirects, headers=self.headers, timeout=timeout)
+            response = requests.get(url, allow_redirects=allow_redirects, headers=headers, timeout=timeout)
         except MissingSchema:
             self.logger.log_message("ERROR", f"Invalid URL '{url}', perhaps you meant 'https://{url}'.")
             return HttpResponse(HttpResponseStatus.MissingSchema, None)

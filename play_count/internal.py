@@ -143,6 +143,10 @@ class PlayCountCrawler(QObject):
                             res = self.kuai_video_com(url)
                         elif url_type == UrlType.SKwAiP:
                             res = self.s_kw_ai_p(url)
+                        elif url_type == UrlType.WwwYoutubeCom:
+                            res = self.www_youtube_com(url)
+                        elif url_type == UrlType.YoutubeCom:
+                            res = self.youtube_com(url)
                         else:
                             res = self.www_tiktok_com_t(url)
                         res["Url"] = url
@@ -236,6 +240,10 @@ class PlayCountCrawler(QObject):
             return UrlType.KuaiVideoCom
         elif url.startswith("http://s.kw.ai/p"):
             return UrlType.SKwAiP
+        elif url.startswith("https://www.youtube.com"):
+            return UrlType.WwwYoutubeCom
+        elif url.startswith("https://youtube.com"):
+            return UrlType.YoutubeCom
         else:
             return UrlType.Invalid
 
@@ -347,6 +355,48 @@ class PlayCountCrawler(QObject):
 
     def s_kw_ai_p(self, url: str):
         return self.kuai_video_com(url=url)
+
+    def www_youtube_com(self, url: str):
+        res = {
+            "Status": VideoResponseStatus.Invalid,
+            "Url": url,
+            "VideoId": None,
+            "Share": None,
+            "Played": None,
+            "Digg": None,
+            "Comment": None,
+        }
+        headers = {
+            "accept-language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7"
+        }
+        response = self.requester.get(url=url, allow_redirects=True, headers=headers)
+        if response.http_status not in [HttpResponseStatus.Success, HttpResponseStatus.Redirects]:
+            res["Status"]=VideoResponseStatus.NetWorkError
+            return res
+        rsp = str(response.content)
+        begin_index = rsp.find("InitialData = ") + len("InitialData = ")
+        end_index = rsp.find(";", begin_index)
+        rsp = rsp[begin_index:end_index]
+        while "\\x" in rsp:
+            index = rsp.find("\\")
+            rsp = rsp[0: index] + rsp[index + 1:]
+        data = json.loads(rsp)
+        try:
+            like_count = data["overlay"]["reelPlayerOverlayRenderer"]["likeButton"]["likeButtonRenderer"]["likeCount"]
+            view_count = data["engagementPanels"][1]["engagementPanelSectionListRenderer"]["content"]["structuredDescriptionContentRenderer"]["items"][0]["videoDescriptionHeaderRenderer"]["factoid"][1]["factoidRenderer"]["value"]["simpleText"]
+            comment_count = data["overlay"]["reelPlayerOverlayRenderer"]["viewCommentsButton"]["buttonRenderer"]["text"]["simpleText"]
+            res["Digg"]= int(like_count)
+            view_count = view_count.replace(",", "")
+            res["Played"] = int(view_count)
+            res["Comment"] = int(comment_count)
+            res["Status"] = VideoResponseStatus.Success
+        except KeyError:
+            res["Status"] = VideoResponseStatus.LoseEfficacy
+            return res
+        return res
+
+    def youtube_com(self, url: str):
+        return self.www_youtube_com(url)
 
     @staticmethod
     def get_tiktok_video_id(url: str) -> str:

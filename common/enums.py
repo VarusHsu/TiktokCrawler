@@ -41,6 +41,8 @@ class UrlType(Enum):
     WwwTiktokComT = 4
     KuaiVideoCom = 5
     SKwAiP = 6
+    WwwYoutubeCom = 7
+    YoutubeCom = 8
 
 
 class VideoResponseStatus(Enum):
