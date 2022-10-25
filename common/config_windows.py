@@ -74,30 +74,31 @@ class ConfigWindows(QObject):
         self.output_path_button.move(400, 13)
         self.output_path_button.clicked.connect(self.handle_select_button_clicked)
 
-        self.notice_email_label = QLabel(self.windows)
-        self.notice_email_label.setText("Notice email:")
-        self.notice_email_label.move(20, 50)
-
-        self.notice_email_line_edit = QLineEdit(self.windows)
-        self.notice_email_line_edit.setFixedWidth(260)
-        self.notice_email_line_edit.move(130, 47)
-
-        self.notice_enable_checkbox = QCheckBox(self.windows)
-        self.notice_enable_checkbox.move(400, 50)
-
-        self.notice_enable_label = QLabel(self.windows)
-        self.notice_enable_label.setText("Enable")
-        self.notice_enable_label.move(420, 51)
+        # deprecated
+        # self.notice_email_label = QLabel(self.windows)
+        # self.notice_email_label.setText("Notice email:")
+        # self.notice_email_label.move(20, 50)
+        #
+        # self.notice_email_line_edit = QLineEdit(self.windows)
+        # self.notice_email_line_edit.setFixedWidth(260)
+        # self.notice_email_line_edit.move(130, 47)
+        #
+        # self.notice_enable_checkbox = QCheckBox(self.windows)
+        # self.notice_enable_checkbox.move(400, 50)
+        #
+        # self.notice_enable_label = QLabel(self.windows)
+        # self.notice_enable_label.setText("Enable")
+        # self.notice_enable_label.move(420, 51)
 
         if self.is_hashtag:
             self.hashtag_label = QLabel(self.windows)
             self.hashtag_label.setText("Hashtag:")
-            self.hashtag_label.move(20, 80)
+            self.hashtag_label.move(20, 50)
 
             self.hashtag_line_edit = QLineEdit(self.windows)
             self.hashtag_line_edit.setText(self.hashtag_str)
             self.hashtag_line_edit.setFixedWidth(260)
-            self.hashtag_line_edit.move(130, 77)
+            self.hashtag_line_edit.move(130, 47)
 
         self.windows.show()
         pass
