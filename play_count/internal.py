@@ -404,8 +404,8 @@ class PlayCountCrawler(QObject):
         try:
             data = json.loads(rsp)
         except Exception:
-            print(rsp)
-            exit(1)
+            res["Status"] = VideoResponseStatus.ApiDataFormatError
+            return res
         try:
             like_count = data["overlay"]["reelPlayerOverlayRenderer"]["likeButton"]["likeButtonRenderer"]["likeCount"]
             view_count = data["engagementPanels"][1]["engagementPanelSectionListRenderer"]["content"]["structuredDescriptionContentRenderer"]["items"][0]["videoDescriptionHeaderRenderer"]["factoid"][1]["factoidRenderer"]["value"]["simpleText"]
@@ -416,7 +416,7 @@ class PlayCountCrawler(QObject):
             res["Comment"] = int(comment_count)
             res["Status"] = VideoResponseStatus.Success
         except KeyError:
-            res["Status"] = VideoResponseStatus.LoseEfficacy
+            res["Status"] = VideoResponseStatus.ApiDataFormatError
             return res
         return res
 
