@@ -43,6 +43,7 @@ class UrlType(Enum):
     SKwAiP = 6
     WwwYoutubeCom = 7
     YoutubeCom = 8
+    YoutuBe = 9
 
 
 class VideoResponseStatus(Enum):

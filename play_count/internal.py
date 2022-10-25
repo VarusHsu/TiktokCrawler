@@ -153,6 +153,8 @@ class PlayCountCrawler(QObject):
                             res = self.www_youtube_com(url)
                         elif url_type == UrlType.YoutubeCom:
                             res = self.youtube_com(url)
+                        elif url_type == UrlType.YoutuBe:
+                            res =self.youtu_be(url)
                         else:
                             res = self.www_tiktok_com_t(url)
                         res["Url"] = url
@@ -260,6 +262,8 @@ class PlayCountCrawler(QObject):
             return UrlType.WwwYoutubeCom
         elif url.startswith("https://youtube.com"):
             return UrlType.YoutubeCom
+        elif url.startswith("https://youtu.be"):
+            return UrlType.YoutuBe
         else:
             return UrlType.Invalid
 
@@ -383,7 +387,7 @@ class PlayCountCrawler(QObject):
             "Comment": None,
         }
         headers = {
-            "accept-language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7"
+            # "accept-language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7"
         }
         response = self.requester.get(url=url, allow_redirects=True, headers=headers)
         if response.http_status not in [HttpResponseStatus.Success, HttpResponseStatus.Redirects]:
@@ -393,10 +397,15 @@ class PlayCountCrawler(QObject):
         begin_index = rsp.find("InitialData = ") + len("InitialData = ")
         end_index = rsp.find(";", begin_index)
         rsp = rsp[begin_index:end_index]
-        while "\\x" in rsp:
-            index = rsp.find("\\")
-            rsp = rsp[0: index] + rsp[index + 1:]
-        data = json.loads(rsp)
+        rsp = self.replace_all(rsp, "\\u", "\\\\u")
+        rsp = self.replace_all(rsp, "\\x", "\\\\x")
+        rsp = self.replace_all(rsp, "\\'", "\\\\'")
+        rsp = self.replace_all(rsp, '\\\\"', "")
+        try:
+            data = json.loads(rsp)
+        except Exception:
+            print(rsp)
+            exit(1)
         try:
             like_count = data["overlay"]["reelPlayerOverlayRenderer"]["likeButton"]["likeButtonRenderer"]["likeCount"]
             view_count = data["engagementPanels"][1]["engagementPanelSectionListRenderer"]["content"]["structuredDescriptionContentRenderer"]["items"][0]["videoDescriptionHeaderRenderer"]["factoid"][1]["factoidRenderer"]["value"]["simpleText"]
@@ -413,6 +422,22 @@ class PlayCountCrawler(QObject):
 
     def youtube_com(self, url: str):
         return self.www_youtube_com(url)
+
+    def youtu_be(self, url: str):
+        return self.www_youtube_com(url)
+
+    @staticmethod
+    def replace_all(string: str, source: str, desc: str):
+        res = ""
+        sour_len = len(source)
+        while True:
+            index = string.find(source)
+            if index == -1:
+                break
+            res += string[0:index] + desc
+            string = string[index + sour_len:]
+        res += string
+        return res
 
     @staticmethod
     def get_tiktok_video_id(url: str) -> str:
