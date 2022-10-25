@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 from threading import Thread
 
@@ -15,6 +16,7 @@ from common.signals import UpdateUISignals, AdjustConfigSignals
 from common.enums import ListType, HttpResponseStatus
 from common.xlsx_worker import verify_xlsx_format
 from common.config_reader import ConfigReader
+from common.config_windows import ConfigWindows
 
 
 class DownloadWindows(QObject):
@@ -134,6 +136,7 @@ class PlayCountClient(QObject):
     import_file_dialog: QFileDialog
     output_path_file_dialog: QFileDialog
     download_windows: DownloadWindows
+    config_windows: ConfigWindows
 
     # signals
     update_ui_signals: UpdateUISignals
@@ -161,6 +164,9 @@ class PlayCountClient(QObject):
         self.reporter = Reporter()
         self.config_reader = ConfigReader()
         self.config_reader.read_config()
+
+        self.update_ui_signals.log_signal.connect(self.handle_log_signal)
+        self.adjust_config_signals.adjust_output_path_signal.connect(self.handle_update_output_directory_signal)
 
     def render(self):
         self.app = QApplication(sys.argv)
@@ -191,6 +197,7 @@ class PlayCountClient(QObject):
         self.setting_button.setFixedWidth(150)
         self.setting_button.setText("Setting")
         self.setting_button.move(580, 385)
+        self.setting_button.clicked.connect(self.handle_setting_button_click)
 
         self.log_box = QListWidget(self.windows)
         self.log_box.move(20, 20)
@@ -236,3 +243,25 @@ class PlayCountClient(QObject):
         else:
             self.logger.log_message("ERROR", "Upload source file failed.")
         pass
+
+    def handle_setting_button_click(self):
+        self.config_windows = ConfigWindows(adjust_config_signals=self.adjust_config_signals,
+                                            update_ui_signals=self.update_ui_signals,
+                                            hashtag_str="",
+                                            is_hashtag=False,
+                                            logger=self.logger,
+                                            output_path=self.output_path)
+        self.config_windows.render()
+        pass
+
+    def handle_update_output_directory_signal(self, path: str):
+        ok = self.check_directory_exist(path=path)
+        if ok:
+            self.logger.log_message("CONFIG", f"Set '{path}' as output path success.")
+            self.output_path = path
+        else:
+            self.logger.log_message("ERROR", f"'{path}' not found.")
+
+    @staticmethod
+    def check_directory_exist(path: str) -> bool:
+        return os.path.exists(path)

@@ -1,3 +1,5 @@
+import os
+
 from PyQt6.QtCore import QObject
 from PyQt6.QtWidgets import QLabel, QCheckBox, QFileDialog, QPushButton, QLineEdit, QWidget
 
@@ -105,10 +107,11 @@ class ConfigWindows(QObject):
 
     def handle_save_button_clicked(self):
         self.adjust_config_signals.adjust_output_path_signal.emit(self.output_path_line_edit.text())
-        if self.notice_enable_checkbox.isChecked():
-            self.adjust_config_signals.adjust_notice_email.emit(self.notice_email_line_edit.text())
-        else:
-            self.adjust_config_signals.adjust_notice_email.emit("")
+        # deprecated
+        # if self.notice_enable_checkbox.isChecked():
+        #     self.adjust_config_signals.adjust_notice_email.emit(self.notice_email_line_edit.text())
+        # else:
+        #     self.adjust_config_signals.adjust_notice_email.emit("")
         if self.is_hashtag:
             self.adjust_config_signals.adjust_hashtag.emit(self.hashtag_line_edit.text())
         self.windows.close()
