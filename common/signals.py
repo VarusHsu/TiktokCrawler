@@ -5,6 +5,7 @@ class UpdateUISignals(QObject):
     log_signal = pyqtSignal(str)
     progress_bar_update_signal = pyqtSignal(int)
     refresh_items_signal = pyqtSignal(list)
+    update_run_stop_button_text_signal = pyqtSignal(str)
 
 
 class AdjustConfigSignals(QObject):

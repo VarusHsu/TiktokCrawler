@@ -6,7 +6,7 @@ import time
 import traceback
 from threading import Thread
 
-from PyQt6 import QtCore
+from PyQt6 import QtCore, QtGui
 from PyQt6.QtCore import QObject
 from PyQt6.QtWidgets import QApplication, QWidget, QListWidget, QPushButton, QProgressBar, QFileDialog
 from bs4 import BeautifulSoup
@@ -52,6 +52,7 @@ class PlayCountCrawler(QObject):
     input_file_name = ''
     notice_email = ''
     ms_token = 'g8vXKy2fjhjd7xrrPcCU7Wfop7isL5KAuyjofBp061Mtaxm_fA5vZ_lAlj46mvE_NnR7x-m-022QnOLdb6Em6HbYv1qm-ek2LXKHh6aTtnLpk_Ke8h7MUTkvWAUZX0cQ1JhrowY='
+    crawl_thread_running: bool = False
 
     def __init__(self):
         super().__init__()
@@ -62,6 +63,7 @@ class PlayCountCrawler(QObject):
         self.adjust_config_signals.adjust_output_path_signal.connect(self.handle_update_output_directory_signal)
         self.adjust_config_signals.adjust_notice_email.connect(self.handle_update_notice_email_signal)
         self.update_ui_signals.progress_bar_update_signal.connect(self.handle_update_progress_bar_signal)
+        self.update_ui_signals.update_run_stop_button_text_signal.connect(self.handle_update_run_stop_button_text_signal)
 
         self.feishu = Feishu()
         self.logger = Logger(lark_sender=self.feishu, signals_sender=self.update_ui_signals)
@@ -108,6 +110,8 @@ class PlayCountCrawler(QObject):
 
     def handle_crawl_button_clicked(self):
         def run():
+            self.crawl_thread_running = True
+            self.update_ui_signals.update_run_stop_button_text_signal.emit("Stop")
             try:
                 fields = ("Url", "Status", "VideoId", "Comment", "Share", "Played", "Digg")
                 filename = self.get_abs_output_filename()
@@ -119,6 +123,8 @@ class PlayCountCrawler(QObject):
                 self.logger.log_message("BEGIN", "Crawl start.")
                 self.reporter.set_timer()
                 while True:
+                    if not self.crawl_thread_running:
+                        exit()
                     read_res = self.xlsx_reader.read_url()
                     if read_res.status == XlsxReadStatus.NoMoreData:
                         break
@@ -156,14 +162,21 @@ class PlayCountCrawler(QObject):
                 during = self.reporter.get_during()
                 self.logger.log_message("SUMMERY", f"Cost {during / 1000} s")
                 self.logger.log_message("COMPLETE", "Complete.", self.notice_email)
+                self.crawl_thread_running = False
+                self.update_ui_signals.update_run_stop_button_text_signal.emit("Run")
             except Exception as e:
                 fp = io.StringIO()  # 创建内存文件对象
                 traceback.print_exc(file=fp)
                 message = fp.getvalue()
                 self.logger.log_message("Exception", message)
-
-        crawl_thread: Thread = Thread(target=run)
-        crawl_thread.start()
+                self.crawl_thread_running = False
+                self.update_ui_signals.update_run_stop_button_text_signal.emit("Run")
+        if self.crawl_thread_running:
+            self.crawl_thread_running= not self.crawl_thread_running
+            self.update_ui_signals.update_run_stop_button_text_signal.emit("Run")
+        else:
+            crawl_thread: Thread = Thread(target=run)
+            crawl_thread.start()
         pass
 
     def handle_import_button_clicked(self):
@@ -215,6 +228,9 @@ class PlayCountCrawler(QObject):
 
     def handle_update_progress_bar_signal(self, progress):
         self.progress_bar.setValue(progress)
+
+    def handle_update_run_stop_button_text_signal(self, text):
+        self.crawl_button.setText(text)
 
     @staticmethod
     def check_directory_exist(path: str) -> bool:
