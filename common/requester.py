@@ -27,7 +27,7 @@ class Requester:
 
     def get(self, url: str, allow_redirects: bool, headers=None, timeout: int = 60) -> HttpResponse:
         if headers is None:
-            headers = headers
+            headers = self.headers
         try:
             response = requests.get(url, allow_redirects=allow_redirects, headers=headers, timeout=timeout)
         except MissingSchema:

@@ -73,6 +73,7 @@ class Hashtag(QObject):
     notice_email = ''
     ms_token = 'g8vXKy2fjhjd7xrrPcCU7Wfop7isL5KAuyjofBp061Mtaxm_fA5vZ_lAlj46mvE_NnR7x-m-022QnOLdb6Em6HbYv1qm-ek2LXKHh6aTtnLpk_Ke8h7MUTkvWAUZX0cQ1JhrowY='
     contacted_xlsx_url = "https://docs.google.com/spreadsheets/d/1E4VLvzBMFyAXfg2tTJvsFPmow8FEDTAoqpJxhDy6IsU/export?format=xlsx&id=1E4VLvzBMFyAXfg2tTJvsFPmow8FEDTAoqpJxhDy6IsU"
+    crawling: bool = False
 
     def __init__(self):
         super().__init__()
@@ -171,6 +172,8 @@ class Hashtag(QObject):
 
         def run():
             try:
+                self.crawl_button = True
+                self.update_ui_signals.update_run_stop_button_text_signal.emit("Stop")
                 self.remove_duplication_page.clear()
                 self.remove_duplication_author.clear()
                 self.reporter.init_counter("VideoCounter")
@@ -213,6 +216,8 @@ class Hashtag(QObject):
                             if rsp.get("itemList") is None or len(rsp.get("itemList")) == 0:
                                 break
                             for video in rsp["itemList"]:
+                                if self.crawling is not True:
+                                    return
                                 self.reporter.self_increase("VideoCounter")
                                 data = {
                                     "HashtagName": hashtag_info.name,
@@ -257,14 +262,23 @@ class Hashtag(QObject):
                 self.logger.log_message("SUMMERY", f"Visit videos: {video_count}.")
                 self.logger.log_message("SUMMERY", f"Get users: {user_count}.")
                 self.logger.log_message("SUMMERY", f"Time cost: {time_during / 1000} s.")
+                self.crawling = False
+                self.update_ui_signals.update_run_stop_button_text_signal.emit("Run")
             except Exception as e:
                 fp = io.StringIO()  # 创建内存文件对象
                 traceback.print_exc(file=fp)
                 message = fp.getvalue()
                 self.logger.log_message("Exception", message)
-
-        crawl_thread: Thread = Thread(target=run)
-        crawl_thread.start()
+                self.crawling = False
+                self.update_ui_signals.update_run_stop_button_text_signal.emit("Run")
+        if self.crawling:
+            self.crawling = False
+            self.update_ui_signals.update_run_stop_button_text_signal.emit("Run")
+        else:
+            crawl_thread: Thread = Thread(target=run)
+            self.crawling = True
+            self.update_ui_signals.update_run_stop_button_text_signal.emit("Stop")
+            crawl_thread.start()
         pass
 
     def handle_config_button_clicked(self):
