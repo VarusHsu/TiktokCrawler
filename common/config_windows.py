@@ -25,6 +25,10 @@ class ConfigWindows(QObject):
     notice_enable_label: QLabel
     hashtag_label: QLabel
     hashtag_line_edit: QLineEdit
+    youtube_label: QLabel
+    tiktok_label: QLabel
+    youtube_checkbox: QCheckBox
+    tiktok_checkbox: QCheckBox
 
     # signals
     update_ui_signals: UpdateUISignals
@@ -41,7 +45,7 @@ class ConfigWindows(QObject):
         self.logger = logger
         self.output_path = output_path
         self.is_hashtag = is_hashtag
-        self.hashtag_str =hashtag_str
+        self.hashtag_str = hashtag_str
 
     def render(self):
         self.windows = QWidget()
@@ -101,6 +105,20 @@ class ConfigWindows(QObject):
             self.hashtag_line_edit.setText(self.hashtag_str)
             self.hashtag_line_edit.setFixedWidth(260)
             self.hashtag_line_edit.move(130, 47)
+
+            self.tiktok_label = QLabel(self.windows)
+            self.tiktok_label.setText("Tiktok: ")
+            self.tiktok_label.move(20, 80)
+
+            self.youtube_label = QLabel(self.windows)
+            self.youtube_label.setText("Youtube: ")
+            self.youtube_label.move(20, 110)
+
+            self.tiktok_checkbox = QCheckBox(self.windows)
+            self.tiktok_checkbox.move(130, 80)
+
+            self.youtube_checkbox = QCheckBox(self.windows)
+            self.youtube_checkbox.move(130, 110)
 
         self.windows.show()
         pass
