@@ -6,7 +6,7 @@ import time
 import traceback
 from threading import Thread
 
-from PyQt6 import QtCore, QtGui
+from PyQt6 import QtCore
 from PyQt6.QtCore import QObject
 from PyQt6.QtWidgets import QApplication, QWidget, QListWidget, QPushButton, QProgressBar, QFileDialog
 from bs4 import BeautifulSoup
@@ -16,7 +16,7 @@ from common.feishu import Feishu
 from common.logger import Logger
 from common.reporter import Reporter
 from common.requester import Requester
-from common.signals import UpdateUISignals,AdjustConfigSignals
+from common.signals import UpdateUISignals, AdjustConfigSignals
 from common.xlsx_worker import XlsxWorker, init_writer, init_reader
 from generate.generate_path import default_path
 from common.enums import XlsxReadStatus, UrlType, VideoResponseStatus, HttpResponseStatus
@@ -154,7 +154,7 @@ class PlayCountCrawler(QObject):
                         elif url_type == UrlType.YoutubeCom:
                             res = self.youtube_com(url)
                         elif url_type == UrlType.YoutuBe:
-                            res =self.youtu_be(url)
+                            res = self.youtu_be(url)
                         else:
                             res = self.www_tiktok_com_t(url)
                         res["Url"] = url
@@ -173,8 +173,9 @@ class PlayCountCrawler(QObject):
                 self.logger.log_message("Exception", message)
                 self.crawl_thread_running = False
                 self.update_ui_signals.update_run_stop_button_text_signal.emit("Run")
+
         if self.crawl_thread_running:
-            self.crawl_thread_running= not self.crawl_thread_running
+            self.crawl_thread_running = not self.crawl_thread_running
             self.update_ui_signals.update_run_stop_button_text_signal.emit("Run")
         else:
             crawl_thread: Thread = Thread(target=run)
@@ -284,7 +285,7 @@ class PlayCountCrawler(QObject):
         url = soup.find(name="a")["href"]
         video_id = self.get_tiktok_video_id(url)
         network_error_rsp["VideoId"] = video_id
-        url = 'https://www.tiktok.com/api/recommend/item_list/?aid=1988&count=30&insertedItemID='+ video_id + "&msToken=" + self.ms_token
+        url = 'https://www.tiktok.com/api/recommend/item_list/?aid=1988&count=30&insertedItemID=' + video_id + "&msToken=" + self.ms_token
         # url = "https://www.tiktok.com/api/recommend/item_list/?aid=1988&app_language=es&app_name=tiktok_web&battery_info=0.44&browser_language=zh-CN&browser_name=Mozilla&browser_online=true&browser_platform=MacIntel&browser_version=5.0%20%28Macintosh%3B%20Intel%20Mac%20OS%20X%2010_15_7%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F104.0.0.0%20Safari%2F537.36&channel=tiktok_web&cookie_enabled=true&count=30&device_id=7106463322559923714&device_platform=web_pc&focus_state=true&from_page=video&history_len=1&insertedItemID=" + video_id + "&is_fullscreen=true&is_page_visible=true&os=mac&priority_region=&referer=&region=DE&screen_height=1920&screen_width=1080&tz_name=Asia%2FShanghai&webcast_language=es&msToken=" + self.ms_token
         response = self.requester.get(url=url, allow_redirects=False)
         if response.http_status not in [HttpResponseStatus.Success, HttpResponseStatus.Redirects]:
@@ -391,7 +392,7 @@ class PlayCountCrawler(QObject):
         }
         response = self.requester.get(url=url, allow_redirects=True, headers=headers)
         if response.http_status not in [HttpResponseStatus.Success, HttpResponseStatus.Redirects]:
-            res["Status"]=VideoResponseStatus.NetWorkError
+            res["Status"] = VideoResponseStatus.NetWorkError
             return res
         rsp = str(response.content)
         begin_index = rsp.find("InitialData = ") + len("InitialData = ")
@@ -406,18 +407,32 @@ class PlayCountCrawler(QObject):
         except Exception:
             res["Status"] = VideoResponseStatus.ApiDataFormatError
             return res
+        incomplete_data_count = 0
         try:
             like_count = data["overlay"]["reelPlayerOverlayRenderer"]["likeButton"]["likeButtonRenderer"]["likeCount"]
+            res["Digg"] = int(like_count)
+        except KeyError:
+            incomplete_data_count += 1
+            res["Digg"] = 0
+        try:
             view_count = data["engagementPanels"][1]["engagementPanelSectionListRenderer"]["content"]["structuredDescriptionContentRenderer"]["items"][0]["videoDescriptionHeaderRenderer"]["factoid"][1]["factoidRenderer"]["value"]["simpleText"]
-            comment_count = data["overlay"]["reelPlayerOverlayRenderer"]["viewCommentsButton"]["buttonRenderer"]["text"]["simpleText"]
-            res["Digg"]= int(like_count)
             view_count = view_count.replace(",", "")
             res["Played"] = int(view_count)
-            res["Comment"] = int(comment_count)
-            res["Status"] = VideoResponseStatus.Success
         except KeyError:
+            incomplete_data_count += 1
+            res["Played"] = 0
+        try:
+            comment_count = data["overlay"]["reelPlayerOverlayRenderer"]["viewCommentsButton"]["buttonRenderer"]["text"]["simpleText"]
+            res["Comment"] = int(comment_count)
+        except KeyError:
+            incomplete_data_count += 1
+            res["Comment"] = 0
+        if incomplete_data_count == 0:
+            res["Status"] = VideoResponseStatus.Success
+        elif incomplete_data_count >= 3:
             res["Status"] = VideoResponseStatus.ApiDataFormatError
-            return res
+        else:
+            res["Status"] = VideoResponseStatus.DataMayIncomplete
         return res
 
     def youtube_com(self, url: str):
