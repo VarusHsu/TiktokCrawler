@@ -199,16 +199,20 @@ class ConfigWindows(QObject):
         self.is_from_youtube = self.youtube_checkbox.isChecked()
         if not self.is_from_youtube and not self.is_from_tiktok:
             self.save_button.setEnabled(False)
+            self.save_button.setToolTip("You must select a website at least.")
         else:
             self.save_button.setEnabled(True)
+            self.save_button.setToolTip("")
         pass
 
     def handle_tiktok_checkbox_clicked(self):
         self.is_from_tiktok = self.tiktok_checkbox.isChecked()
         if not self.is_from_youtube and not self.is_from_tiktok:
             self.save_button.setEnabled(False)
+            self.save_button.setToolTip("You must select a website at least.")
         else:
             self.save_button.setEnabled(True)
+            self.save_button.setToolTip("")
         pass
 
 
