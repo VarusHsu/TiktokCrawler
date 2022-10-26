@@ -51,6 +51,7 @@ class ConfigWindows(QObject):
         self.output_path = output_path
         self.is_hashtag = is_hashtag
         self.hashtag_str = hashtag_str
+        self.get_default_website()
 
     def render(self):
         self.windows = QWidget()
@@ -121,9 +122,13 @@ class ConfigWindows(QObject):
 
             self.tiktok_checkbox = QCheckBox(self.windows)
             self.tiktok_checkbox.move(130, 80)
+            self.tiktok_checkbox.clicked.connect(self.handle_tiktok_checkbox_clicked)
+            self.tiktok_checkbox.setChecked(self.is_from_tiktok)
 
             self.youtube_checkbox = QCheckBox(self.windows)
             self.youtube_checkbox.move(130, 110)
+            self.youtube_checkbox.clicked.connect(self.handle_youtube_checkbox_clicked)
+            self.youtube_checkbox.setChecked(self.is_from_youtube)
 
         self.windows.show()
         pass
@@ -184,5 +189,21 @@ class ConfigWindows(QObject):
             res += "0"
         with open(self.cache_file, "w") as f:
             f.write(res)
+
+    def handle_youtube_checkbox_clicked(self):
+        self.is_from_youtube = self.youtube_checkbox.isChecked()
+        if not self.is_from_youtube and not self.is_from_tiktok:
+            self.save_button.setEnabled(False)
+        else:
+            self.save_button.setEnabled(True)
+        pass
+
+    def handle_tiktok_checkbox_clicked(self):
+        self.is_from_tiktok = self.tiktok_checkbox.isChecked()
+        if not self.is_from_youtube and not self.is_from_tiktok:
+            self.save_button.setEnabled(False)
+        else:
+            self.save_button.setEnabled(True)
+        pass
 
 
