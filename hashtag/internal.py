@@ -84,6 +84,7 @@ class Hashtag(QObject):
         self.adjust_config_signals.adjust_output_path_signal.connect(self.handle_update_output_directory_signal)
         self.adjust_config_signals.adjust_notice_email.connect(self.handle_update_notice_email_signal)
         self.adjust_config_signals.adjust_hashtag.connect(self.handle_update_hashtag_signal)
+        self.update_ui_signals.update_run_stop_button_text_signal.connect(self.handle_update_run_stop_button_text_signal)
 
         self.feishu = Feishu()
         self.logger = Logger(lark_sender=self.feishu, signals_sender=self.update_ui_signals)
@@ -172,7 +173,7 @@ class Hashtag(QObject):
 
         def run():
             try:
-                self.crawl_button = True
+                self.crawling = True
                 self.update_ui_signals.update_run_stop_button_text_signal.emit("Stop")
                 self.remove_duplication_page.clear()
                 self.remove_duplication_author.clear()
@@ -284,6 +285,10 @@ class Hashtag(QObject):
     def handle_config_button_clicked(self):
         self.config_windows = ConfigWindows(self.update_ui_signals, self.adjust_config_signals, self.logger, self.output_path, True, self.hashtag_str)
         self.config_windows.render()
+        pass
+
+    def handle_update_run_stop_button_text_signal(self, text: str):
+        self.crawl_button.setText(text)
         pass
 
     def get_abs_output_filename(self) -> str:
