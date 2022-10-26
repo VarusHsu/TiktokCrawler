@@ -41,6 +41,8 @@ class ConfigWindows(QObject):
     output_path: str
     is_hashtag: bool
 
+    cache_file: str = default_path + ".crawl_cache"
+
     def __init__(self, update_ui_signals: UpdateUISignals, adjust_config_signals: AdjustConfigSignals, logger: Logger, output_path: str, is_hashtag: bool, hashtag_str: str):
         super().__init__()
         self.update_ui_signals = update_ui_signals
@@ -156,7 +158,7 @@ class ConfigWindows(QObject):
 
     def get_default_website(self):
         try:
-            with open(default_path + ".crawl_cache", "r") as f:
+            with open(self.cache_file, "r") as f:
                 cache = f.read(2)
                 self.is_from_tiktok = cache[0] == '1'
                 self.is_from_youtube = cache[1] == '1'
@@ -165,8 +167,22 @@ class ConfigWindows(QObject):
             self.get_default_website()
         pass
 
-    @staticmethod
-    def generate_default_website():
-        with open(default_path+".crawl_cache", "w") as f:
+    def generate_default_website(self):
+        with open(self.cache_file, "w") as f:
             f.write("10")
         pass
+
+    def set_default_website(self, is_from_tiktok: bool, is_from_youtube: bool):
+        res = ""
+        if is_from_tiktok:
+            res += "1"
+        else:
+            res += "0"
+        if is_from_youtube:
+            res += "1"
+        else:
+            res += "0"
+        with open(self.cache_file, "w") as f:
+            f.write(res)
+
+
