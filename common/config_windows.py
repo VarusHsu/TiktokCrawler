@@ -43,7 +43,7 @@ class ConfigWindows(QObject):
 
     cache_file: str = default_path + ".crawl_cache"
 
-    def __init__(self, update_ui_signals: UpdateUISignals, adjust_config_signals: AdjustConfigSignals, logger: Logger, output_path: str, is_hashtag: bool, hashtag_str: str):
+    def __init__(self, update_ui_signals: UpdateUISignals, adjust_config_signals: AdjustConfigSignals, logger: Logger, output_path: str, is_hashtag: bool, hashtag_str: str, is_from_tiktok: bool = False, is_from_youtube: bool = False):
         super().__init__()
         self.update_ui_signals = update_ui_signals
         self.adjust_config_signals = adjust_config_signals
@@ -51,7 +51,8 @@ class ConfigWindows(QObject):
         self.output_path = output_path
         self.is_hashtag = is_hashtag
         self.hashtag_str = hashtag_str
-        self.get_default_website()
+        self.is_from_tiktok = is_from_tiktok
+        self.is_from_youtube = is_from_youtube
 
     def render(self):
         self.windows = QWidget()
@@ -142,6 +143,8 @@ class ConfigWindows(QObject):
         #     self.adjust_config_signals.adjust_notice_email.emit("")
         if self.is_hashtag:
             self.adjust_config_signals.adjust_hashtag.emit(self.hashtag_line_edit.text())
+            self.adjust_config_signals.adjust_hashtag_website_signal.emit(self.is_from_tiktok, self.is_from_youtube)
+            self.set_default_website(self.is_from_tiktok, self.is_from_youtube)
         self.windows.close()
 
     def handle_cancel_button_clicked(self):
@@ -187,6 +190,8 @@ class ConfigWindows(QObject):
             res += "1"
         else:
             res += "0"
+        if os.path.exists(self.cache_file):
+            os.remove(self.cache_file)
         with open(self.cache_file, "w") as f:
             f.write(res)
 

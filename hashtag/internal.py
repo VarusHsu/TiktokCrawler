@@ -74,9 +74,14 @@ class Hashtag(QObject):
     ms_token = 'g8vXKy2fjhjd7xrrPcCU7Wfop7isL5KAuyjofBp061Mtaxm_fA5vZ_lAlj46mvE_NnR7x-m-022QnOLdb6Em6HbYv1qm-ek2LXKHh6aTtnLpk_Ke8h7MUTkvWAUZX0cQ1JhrowY='
     contacted_xlsx_url = "https://docs.google.com/spreadsheets/d/1E4VLvzBMFyAXfg2tTJvsFPmow8FEDTAoqpJxhDy6IsU/export?format=xlsx&id=1E4VLvzBMFyAXfg2tTJvsFPmow8FEDTAoqpJxhDy6IsU"
     crawling: bool = False
+    is_from_tiktok: bool
+    is_from_youtube: bool
+    cache_file: str = default_path + ".crawl_cache"
 
     def __init__(self):
         super().__init__()
+
+        self.get_default_website()
 
         self.update_ui_signals = UpdateUISignals()
         self.adjust_config_signals = AdjustConfigSignals()
@@ -85,6 +90,7 @@ class Hashtag(QObject):
         self.adjust_config_signals.adjust_notice_email.connect(self.handle_update_notice_email_signal)
         self.adjust_config_signals.adjust_hashtag.connect(self.handle_update_hashtag_signal)
         self.update_ui_signals.update_run_stop_button_text_signal.connect(self.handle_update_run_stop_button_text_signal)
+        self.adjust_config_signals.adjust_hashtag_website_signal.connect(self.handle_adjust_hashtag_website_signal)
 
         self.feishu = Feishu()
         self.logger = Logger(lark_sender=self.feishu, signals_sender=self.update_ui_signals)
@@ -272,6 +278,7 @@ class Hashtag(QObject):
                 self.logger.log_message("Exception", message)
                 self.crawling = False
                 self.update_ui_signals.update_run_stop_button_text_signal.emit("Run")
+
         if self.crawling:
             self.crawling = False
             self.update_ui_signals.update_run_stop_button_text_signal.emit("Run")
@@ -283,7 +290,7 @@ class Hashtag(QObject):
         pass
 
     def handle_config_button_clicked(self):
-        self.config_windows = ConfigWindows(self.update_ui_signals, self.adjust_config_signals, self.logger, self.output_path, True, self.hashtag_str)
+        self.config_windows = ConfigWindows(self.update_ui_signals, self.adjust_config_signals, self.logger, self.output_path, True, self.hashtag_str, self.is_from_tiktok, self.is_from_youtube)
         self.config_windows.render()
         pass
 
@@ -341,3 +348,26 @@ class Hashtag(QObject):
             if re.match(pattern, value):
                 return value
         return ""
+
+    def handle_adjust_hashtag_website_signal(self, tiktok: bool, youtube: bool):
+        self.is_from_youtube = youtube
+        self.is_from_tiktok =tiktok
+        pass
+
+    def get_default_website(self):
+        try:
+            with open(self.cache_file, "r") as f:
+                cache = f.read(2)
+                self.is_from_tiktok = cache[0] == '1'
+                self.is_from_youtube = cache[1] == '1'
+        except FileNotFoundError:
+            self.generate_default_website()
+            self.get_default_website()
+        pass
+
+    def generate_default_website(self):
+        if os.path.exists(self.cache_file):
+            os.remove(self.cache_file)
+        with open(self.cache_file, "w") as f:
+            f.write("10")
+        pass
