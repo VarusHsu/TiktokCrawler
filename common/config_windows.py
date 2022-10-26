@@ -5,6 +5,7 @@ from PyQt6.QtWidgets import QLabel, QCheckBox, QFileDialog, QPushButton, QLineEd
 
 from common.logger import Logger
 from common.signals import UpdateUISignals, AdjustConfigSignals
+from generate.generate_path import default_path
 
 
 class ConfigWindows(QObject):
@@ -34,6 +35,8 @@ class ConfigWindows(QObject):
     update_ui_signals: UpdateUISignals
     adjust_config_signals: AdjustConfigSignals
 
+    is_from_tiktok: bool
+    is_from_youtube: bool
     hashtag_str: str
     output_path: str
     is_hashtag: bool
@@ -149,4 +152,21 @@ class ConfigWindows(QObject):
             self.output_path = directory
         self.output_path_filedialog.close()
         self.output_path_line_edit.setText(self.output_path)
+        pass
+
+    def get_default_website(self):
+        try:
+            with open(default_path + ".crawl_cache", "r") as f:
+                cache = f.read(2)
+                self.is_from_tiktok = cache[0] == '1'
+                self.is_from_youtube = cache[1] == '1'
+        except FileNotFoundError:
+            self.generate_default_website()
+            self.get_default_website()
+        pass
+
+    @staticmethod
+    def generate_default_website():
+        with open(default_path+".crawl_cache", "w") as f:
+            f.write("10")
         pass
