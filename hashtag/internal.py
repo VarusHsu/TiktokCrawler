@@ -21,7 +21,7 @@ from common.requester import Requester
 from common.signals import UpdateUISignals, AdjustConfigSignals
 from common.xlsx_worker import XlsxWorker, init_writer, init_remove_dup_reader
 from common.enums import GetHashtagInfoStatus, HttpResponseStatus
-from common.util import merge_array
+from common.util import merge_array, get_youtube_initialData
 
 
 class HashtagInfoResponse:
@@ -178,36 +178,6 @@ class Hashtag(QObject):
             return
 
         def run_tiktok():
-            pass
-
-        def run_youtube():
-            for task in self.task_list:
-                pass
-            pass
-
-        def run():
-            self.crawling = True
-            self.update_ui_signals.update_run_stop_button_text_signal.emit("Stop")
-            self.remove_duplication_page.clear()
-            self.remove_duplication_author.clear()
-            self.reporter.init_counter("VideoCounter")
-            self.reporter.init_counter("UserCounter")
-            self.reporter.set_timer()
-            self.logger.log_message("BEGIN", "Crawl start")
-            fields = ("Website", "HashtagName", "HashtagVideoCount", "HashtagViewCount", "UserNickname", "UserSignature", "UserHomePage",
-                      "UserDiggCount", "UserFollowerCount", "UserHeartCount", "UserVideoCount", "VideoPage", "VideoDiggCount", "VideoPlayCount",
-                      "VideoShareCount", "VideoCommentCount", "VideoCreateTime", "VideoDescription", "Email")
-            filename = self.get_abs_output_filename()
-            self.xlsx_writer = init_writer(path=filename, fields=fields)
-            self.download_contacted_excel()
-            self.remove_dup_reader = init_remove_dup_reader()
-            if self.remove_dup_reader is None:
-                self.logger.log_message("ERROR", "Initial remove duplication xlsx error.")
-            else:
-                self.remove_duplication_author = self.remove_dup_reader.read_unique_id_v2()
-                self.logger.log_message("DEBUG", f"{self.remove_duplication_author}")
-                os.remove(default_path + "cache.xlsx")
-                self.logger.log_message("CRAWL", "Initial remove duplication xlsx success.")
             try:
                 for hashtag in self.task_list:
                     hashtag_info = self.get_hashtag_info(hashtag)
@@ -286,7 +256,51 @@ class Hashtag(QObject):
                 self.logger.log_message("Exception", message)
                 self.crawling = False
                 self.update_ui_signals.update_run_stop_button_text_signal.emit("Run")
+            pass
 
+        def run_youtube():
+            for task in self.task_list:
+                content = self.get_youtube_hashtag_first_page_content(task)
+                # type
+                content = str(content)
+                token = self.get_token_from_youtube_hashtag_html(content)
+                data = self.get_first_page_author_from_youtube_hashtag_html(content)
+                print(f"token:{token}")
+                print(f"data:{data}")
+                pass
+            pass
+
+        def run_init():
+            self.crawling = True
+            self.update_ui_signals.update_run_stop_button_text_signal.emit("Stop")
+            self.remove_duplication_page.clear()
+            self.remove_duplication_author.clear()
+            self.reporter.init_counter("VideoCounter")
+            self.reporter.init_counter("UserCounter")
+            self.reporter.set_timer()
+            self.logger.log_message("BEGIN", "Crawl start")
+            fields = ("Website", "HashtagName", "HashtagVideoCount", "HashtagViewCount", "UserNickname", "UserSignature", "UserHomePage",
+                      "UserDiggCount", "UserFollowerCount", "UserHeartCount", "UserVideoCount", "VideoPage", "VideoDiggCount", "VideoPlayCount",
+                      "VideoShareCount", "VideoCommentCount", "VideoCreateTime", "VideoDescription", "Email")
+            filename = self.get_abs_output_filename()
+            self.xlsx_writer = init_writer(path=filename, fields=fields)
+            self.download_contacted_excel()
+            self.remove_dup_reader = init_remove_dup_reader()
+            if self.remove_dup_reader is None:
+                self.logger.log_message("ERROR", "Initial remove duplication xlsx error.")
+            else:
+                self.remove_duplication_author = self.remove_dup_reader.read_unique_id_v2()
+                self.logger.log_message("DEBUG", f"{self.remove_duplication_author}")
+                os.remove(default_path + "cache.xlsx")
+                self.logger.log_message("CRAWL", "Initial remove duplication xlsx success.")
+
+        def run():
+            # todo [debug] When publish need modify.
+            # run_init()
+            if self.is_from_tiktok:
+                run_tiktok()
+            if self.is_from_youtube:
+                run_youtube()
         if self.crawling:
             self.crawling = False
             self.update_ui_signals.update_run_stop_button_text_signal.emit("Run")
@@ -319,9 +333,7 @@ class Hashtag(QObject):
             "HashtagName": hashtag,
             "Continuation": ""
         }
-        url = f"https://www.youtube.com/hashtag/{hashtag}"
-        rsp = self.requester.get(url=url, allow_redirects=False)
-        content = rsp.content
+        content = self.get_youtube_hashtag_first_page_content(hashtag)
         token = self.get_token_from_youtube_hashtag_html(content)
         res["Continuation"] = token
         return res
@@ -331,6 +343,18 @@ class Hashtag(QObject):
         begin_index = content.find('"token"') + 9
         end_index = content.find('"', begin_index)
         return content[begin_index:end_index]
+
+    @staticmethod
+    def get_first_page_author_from_youtube_hashtag_html(content: str) -> dict:
+        initial_data = get_youtube_initialData(content)
+        data = json.loads(initial_data)
+        return data
+
+    def get_youtube_hashtag_first_page_content(self, hashtag: str) ->str:
+        url = f"https://www.youtube.com/hashtag/{hashtag}"
+        rsp = self.requester.get(url=url, allow_redirects=False)
+        content = rsp.content
+        return content
 
     @staticmethod
     def check_directory_exist(path: str) -> bool:
