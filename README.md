@@ -1,4 +1,6 @@
 # TiktokCrawler
+# 朋友们，这个项目算是我给Jojoy留下的最后一份礼物了。这几天我会把Youtube的内容补充完毕，修复所有的bug。
+# 爱你们的--徐硕(Varus)
 * 安装依赖项
 ```shell
   pip3 install -r requirements.txt	
